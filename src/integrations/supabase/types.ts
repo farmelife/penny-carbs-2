@@ -635,6 +635,8 @@ export type Database = {
           order_type: string | null
           package_id: string | null
           panchayat_id: string
+          referral_code: string | null
+          referred_by: string | null
           service_charge_amount: number | null
           service_type: Database["public"]["Enums"]["service_type"]
           status: Database["public"]["Enums"]["order_status"]
@@ -674,6 +676,8 @@ export type Database = {
           order_type?: string | null
           package_id?: string | null
           panchayat_id: string
+          referral_code?: string | null
+          referred_by?: string | null
           service_charge_amount?: number | null
           service_type: Database["public"]["Enums"]["service_type"]
           status?: Database["public"]["Enums"]["order_status"]
@@ -713,6 +717,8 @@ export type Database = {
           order_type?: string | null
           package_id?: string | null
           panchayat_id?: string
+          referral_code?: string | null
+          referred_by?: string | null
           service_charge_amount?: number | null
           service_type?: Database["public"]["Enums"]["service_type"]
           status?: Database["public"]["Enums"]["order_status"]
@@ -876,6 +882,89 @@ export type Database = {
           },
         ]
       }
+      referral_codes: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          is_active: boolean
+          total_earnings: number | null
+          total_referrals: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          total_earnings?: number | null
+          total_referrals?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          total_earnings?: number | null
+          total_referrals?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      referrals: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          commission_amount: number
+          commission_percent: number
+          created_at: string
+          id: string
+          order_id: string
+          paid_at: string | null
+          referrer_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          commission_amount?: number
+          commission_percent?: number
+          created_at?: string
+          id?: string
+          order_id: string
+          paid_at?: string | null
+          referrer_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          commission_amount?: number
+          commission_percent?: number
+          created_at?: string
+          id?: string
+          order_id?: string
+          paid_at?: string | null
+          referrer_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referrals_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       settlements: {
         Row: {
           amount: number
@@ -1013,6 +1102,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_referral_code: { Args: { user_uuid: string }; Returns: string }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
