@@ -9,6 +9,7 @@ export interface CookDish {
   created_at: string;
   updated_at: string;
   custom_price: number | null;
+  is_coming_soon: boolean;
   food_item?: {
     id: string;
     name: string;

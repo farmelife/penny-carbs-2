@@ -1,0 +1,1 @@
+ALTER TABLE public.cook_dishes ADD COLUMN is_coming_soon boolean NOT NULL DEFAULT false;

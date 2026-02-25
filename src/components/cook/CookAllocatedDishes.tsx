@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
+import { Switch } from '@/components/ui/switch';
 import { ChefHat, Leaf, IndianRupee, Check, X } from 'lucide-react';
 
 const CookAllocatedDishes: React.FC = () => {
@@ -44,6 +45,20 @@ const CookAllocatedDishes: React.FC = () => {
       toast({ title: 'Failed to update price', description: error.message, variant: 'destructive' });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleToggleComingSoon = async (dishId: string, currentValue: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('cook_dishes')
+        .update({ is_coming_soon: !currentValue })
+        .eq('id', dishId);
+      if (error) throw error;
+      toast({ title: !currentValue ? 'Marked as Coming Soon' : 'Removed Coming Soon' });
+      queryClient.invalidateQueries({ queryKey: ['cook-allocated-dishes'] });
+    } catch (error: any) {
+      toast({ title: 'Failed to update', description: error.message, variant: 'destructive' });
     }
   };
 
@@ -87,6 +102,14 @@ const CookAllocatedDishes: React.FC = () => {
                       <p className="text-xs text-muted-foreground">
                         Base: ₹{basePrice} • {dish.food_item?.category?.name || 'Uncategorized'}
                       </p>
+                      <div className="flex items-center gap-1.5 mt-1">
+                        <Switch
+                          checked={dish.is_coming_soon}
+                          onCheckedChange={() => handleToggleComingSoon(dish.id, dish.is_coming_soon)}
+                          className="scale-75 origin-left"
+                        />
+                        <span className="text-[10px] text-muted-foreground">Coming Soon</span>
+                      </div>
                     </div>
                   </div>
 

@@ -334,6 +334,7 @@ export type Database = {
           custom_price: number | null
           food_item_id: string
           id: string
+          is_coming_soon: boolean
           updated_at: string
         }
         Insert: {
@@ -344,6 +345,7 @@ export type Database = {
           custom_price?: number | null
           food_item_id: string
           id?: string
+          is_coming_soon?: boolean
           updated_at?: string
         }
         Update: {
@@ -354,6 +356,7 @@ export type Database = {
           custom_price?: number | null
           food_item_id?: string
           id?: string
+          is_coming_soon?: boolean
           updated_at?: string
         }
         Relationships: [
