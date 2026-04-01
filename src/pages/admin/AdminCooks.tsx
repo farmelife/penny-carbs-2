@@ -18,7 +18,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, Plus, ChefHat, Phone, MapPin, Loader2, Calendar, Users, Search, User, CheckCircle, UtensilsCrossed, MessageSquare } from 'lucide-react';
+import { ArrowLeft, Plus, ChefHat, Phone, MapPin, Loader2, Calendar, Users, Search, User, CheckCircle, UtensilsCrossed, MessageSquare, Edit } from 'lucide-react';
 import { format } from 'date-fns';
 import type { Cook } from '@/types/cook';
 import CookDishesTab from '@/components/admin/CookDishesTab';
