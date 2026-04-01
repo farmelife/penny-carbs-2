@@ -58,13 +58,20 @@ const HomemadeOrder: React.FC = () => {
       try {
         const { data: cookDishes, error: cookDishesError } = await supabase
           .from('cook_dishes')
-          .select(`food_item_id, cooks!inner(is_active, is_available)`);
+          .select(`food_item_id, cooks!inner(is_active, is_available, panchayat_id, assigned_panchayat_ids)`);
 
         if (cookDishesError) throw cookDishesError;
 
         const allocatedItemIds = [...new Set(
           (cookDishes || [])
-            .filter((cd: any) => cd.cooks?.is_active && cd.cooks?.is_available)
+            .filter((cd: any) => {
+              if (!cd.cooks?.is_active || !cd.cooks?.is_available) return false;
+              if (selectedPanchayat?.id) {
+                const assignedPanchayats: string[] = cd.cooks.assigned_panchayat_ids || [];
+                return assignedPanchayats.includes(selectedPanchayat.id) || cd.cooks.panchayat_id === selectedPanchayat.id;
+              }
+              return true;
+            })
             .map((cd: any) => cd.food_item_id)
         )];
 
