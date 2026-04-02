@@ -29,11 +29,11 @@ const UsersTableActions: React.FC<UsersTableActionsProps> = ({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={onEdit}>
+        <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onEdit(); }}>
           <Edit className="mr-2 h-4 w-4" />
           Edit
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={onToggleActive}>
+        <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onToggleActive(); }}>
           {isActive ? (
             <>
               <UserX className="mr-2 h-4 w-4" />
@@ -46,7 +46,7 @@ const UsersTableActions: React.FC<UsersTableActionsProps> = ({
             </>
           )}
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={onDelete} className="text-destructive">
+        <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onDelete(); }} className="text-destructive">
           <Trash2 className="mr-2 h-4 w-4" />
           Delete
         </DropdownMenuItem>
