@@ -411,6 +411,32 @@ const OrderDetail: React.FC = () => {
           </Card>
         )}
 
+        {/* Cancel Order */}
+        {canCancel && (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" className="w-full gap-2" disabled={isCancelling}>
+                <Ban className="h-4 w-4" />
+                {isCancelling ? 'Cancelling...' : 'Cancel Order'}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Cancel Order?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to cancel this order? This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>No, Keep Order</AlertDialogCancel>
+                <AlertDialogAction onClick={handleCancelOrder} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                  Yes, Cancel Order
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
+
         {/* Rating Section for Delivered Orders */}
         {order.status === 'delivered' && user && orderItems.length > 0 && (
           <OrderRating
