@@ -58,7 +58,11 @@ const ItemDetail: React.FC = () => {
           .eq('id', itemId)
           .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error fetching item:', error);
+          setIsLoading(false);
+          return;
+        }
         setItem(data as FoodItemWithImages);
 
         // For homemade items, fetch available cooks
@@ -292,7 +296,7 @@ const ItemDetail: React.FC = () => {
             size="icon"
             className="rounded-full bg-card/90 shadow-md backdrop-blur"
             onClick={() => {
-              const url = window.location.href;
+              const url = `${window.location.origin}/item/${itemId}`;
               navigator.clipboard.writeText(url);
               setCopied(true);
               toast.success('Link copied!');
@@ -306,7 +310,7 @@ const ItemDetail: React.FC = () => {
             size="icon"
             className="rounded-full bg-card/90 shadow-md backdrop-blur"
             onClick={() => {
-              const url = window.location.href;
+              const url = `${window.location.origin}/item/${itemId}`;
               const text = `Check out ${item?.name || 'this item'}! ${url}`;
               window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
             }}
