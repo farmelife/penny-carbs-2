@@ -28,8 +28,12 @@ const Cart: React.FC = () => {
     );
     if (!activeRule) return 0;
 
-    // Free delivery if subtotal exceeds threshold
+    // Check if subtotal exceeds threshold
     if (activeRule.free_delivery_above != null && totalAmount >= activeRule.free_delivery_above) {
+      // If a reduced charge is set for above threshold, use it instead of free
+      if (activeRule.charge_above_threshold != null && activeRule.charge_above_threshold > 0) {
+        return activeRule.charge_above_threshold;
+      }
       return 0;
     }
 
