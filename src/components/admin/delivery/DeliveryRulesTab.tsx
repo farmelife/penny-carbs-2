@@ -201,8 +201,8 @@ const DeliveryRulesTab: React.FC = () => {
             </DialogDescription>
           </DialogHeader>
 
-          <ScrollArea className="flex-1 max-h-[60vh] pr-4">
-            <div className="space-y-4 py-2">
+          <ScrollArea className="flex-1 max-h-[50vh] pr-4 overflow-y-auto">
+            <div className="space-y-4 py-2 pb-6">
               <div className="space-y-2">
                 <Label>Service Type</Label>
                 <Select
