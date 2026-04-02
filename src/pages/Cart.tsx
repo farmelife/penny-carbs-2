@@ -18,19 +18,27 @@ const Cart: React.FC = () => {
   const deliveryFee = useMemo(() => {
     if (!items.length || !rules?.length) return 0;
 
-    // Determine the service type from cart items
     const serviceType = items[0]?.food_item?.service_type;
     if (!serviceType) return 0;
 
-    // Find active rule for this service type
     const activeRule = rules.find(
       (r) => r.service_type === serviceType && r.is_active
     );
     if (!activeRule) return 0;
 
-    // Check if subtotal exceeds threshold
+    // Check tiers first (new system) - find highest matching tier
+    const tiers = (activeRule as any).tiers || [];
+    if (tiers.length > 0) {
+      // Sort descending by order_above to find highest matching
+      const sortedTiers = [...tiers].sort((a: any, b: any) => b.order_above - a.order_above);
+      const matchingTier = sortedTiers.find((t: any) => totalAmount >= t.order_above);
+      if (matchingTier) {
+        return matchingTier.delivery_charge;
+      }
+    }
+
+    // Legacy: single threshold fields
     if (activeRule.free_delivery_above != null && totalAmount >= activeRule.free_delivery_above) {
-      // If a reduced charge is set for above threshold, use it instead of free
       if (activeRule.charge_above_threshold != null && activeRule.charge_above_threshold > 0) {
         return activeRule.charge_above_threshold;
       }

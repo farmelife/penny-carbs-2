@@ -806,6 +806,44 @@ export type Database = {
         }
         Relationships: []
       }
+      delivery_rule_tiers: {
+        Row: {
+          created_at: string
+          delivery_charge: number
+          display_order: number
+          id: string
+          order_above: number
+          rule_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          delivery_charge?: number
+          display_order?: number
+          id?: string
+          order_above?: number
+          rule_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          delivery_charge?: number
+          display_order?: number
+          id?: string
+          order_above?: number
+          rule_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_rule_tiers_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_rules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       delivery_rules: {
         Row: {
           charge_above_threshold: number | null
