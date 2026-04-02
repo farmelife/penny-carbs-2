@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React from 'react';
 import AppHeader from '@/components/customer/AppHeader';
 import OperationalModules from '@/components/customer/OperationalModules';
 import BannerCarousel from '@/components/customer/BannerCarousel';
@@ -9,26 +8,11 @@ import ServiceCards from '@/components/customer/ServiceCards';
 import PopularItems from '@/components/customer/PopularItems';
 import CartButton from '@/components/customer/CartButton';
 import BottomNav from '@/components/customer/BottomNav';
-import PendingCartDialog from '@/components/customer/PendingCartDialog';
+import PendingCartBanner from '@/components/customer/PendingCartBanner';
 import { useActiveServiceTypes } from '@/hooks/useServiceModules';
-import { useCart } from '@/contexts/CartContext';
-import { useAuth } from '@/contexts/AuthContext';
 
 const Index: React.FC = () => {
-  const navigate = useNavigate();
-  const { user } = useAuth();
-  const { items, itemCount, clearCart } = useCart();
-  const [showPendingCart, setShowPendingCart] = useState(false);
   const { data: activeTypes } = useActiveServiceTypes();
-
-  useEffect(() => {
-    if (user && itemCount > 0) {
-      const dismissed = sessionStorage.getItem('pending_cart_dismissed');
-      if (!dismissed) {
-        setShowPendingCart(true);
-      }
-    }
-  }, [user, itemCount]);
 
   const handleSearch = (query: string) => {
     console.log('Search:', query);
@@ -38,6 +22,7 @@ const Index: React.FC = () => {
 
   return (
     <div className="min-h-screen pb-20 bg-[#fd5d08]">
+      <PendingCartBanner />
       <AppHeader onSearch={handleSearch} />
       <OperationalModules />
       
@@ -75,27 +60,6 @@ const Index: React.FC = () => {
         )}
       </main>
 
-      <PendingCartDialog
-        open={showPendingCart}
-        onOpenChange={(open) => {
-          setShowPendingCart(open);
-          if (!open) sessionStorage.setItem('pending_cart_dismissed', 'true');
-        }}
-        cartItemCount={itemCount}
-        onContinue={() => {
-          setShowPendingCart(false);
-          sessionStorage.setItem('pending_cart_dismissed', 'true');
-        }}
-        onClearCart={async () => {
-          await clearCart();
-          setShowPendingCart(false);
-          sessionStorage.setItem('pending_cart_dismissed', 'true');
-        }}
-        onViewCart={() => {
-          setShowPendingCart(false);
-          navigate('/cart');
-        }}
-      />
       <CartButton />
       <BottomNav />
     </div>
