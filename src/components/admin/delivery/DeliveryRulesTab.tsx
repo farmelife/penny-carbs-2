@@ -35,6 +35,7 @@ const DeliveryRulesTab: React.FC = () => {
     free_delivery_above: null,
     per_km_charge: null,
     max_delivery_charge: null,
+    charge_above_threshold: null,
     is_active: true,
   });
 
@@ -46,6 +47,7 @@ const DeliveryRulesTab: React.FC = () => {
       free_delivery_above: null,
       per_km_charge: null,
       max_delivery_charge: null,
+      charge_above_threshold: null,
       is_active: true,
     });
     setEditingId(null);
@@ -65,6 +67,7 @@ const DeliveryRulesTab: React.FC = () => {
       free_delivery_above: rule.free_delivery_above,
       per_km_charge: rule.per_km_charge,
       max_delivery_charge: rule.max_delivery_charge,
+      charge_above_threshold: rule.charge_above_threshold,
       is_active: rule.is_active,
     });
     setIsDialogOpen(true);
@@ -120,6 +123,12 @@ const DeliveryRulesTab: React.FC = () => {
                 <>
                   <span>Max Charge:</span>
                   <span className="font-medium text-foreground">₹{rule.max_delivery_charge}</span>
+                </>
+              )}
+              {rule.charge_above_threshold != null && rule.free_delivery_above != null && (
+                <>
+                  <span>Charge Above ₹{rule.free_delivery_above}:</span>
+                  <span className="font-medium text-foreground">₹{rule.charge_above_threshold}</span>
                 </>
               )}
             </div>
@@ -264,6 +273,23 @@ const DeliveryRulesTab: React.FC = () => {
                 onChange={(e) => setForm(prev => ({
                   ...prev,
                   max_delivery_charge: e.target.value ? Number(e.target.value) : null,
+                }))}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Reduced Charge Above Threshold (₹) <span className="text-muted-foreground text-xs">Optional</span></Label>
+              <p className="text-xs text-muted-foreground">
+                When order amount exceeds "Free Delivery Above", charge this amount instead of min charge. Leave empty for free delivery.
+              </p>
+              <Input
+                type="number"
+                min="0"
+                placeholder="e.g. 20"
+                value={form.charge_above_threshold ?? ''}
+                onChange={(e) => setForm(prev => ({
+                  ...prev,
+                  charge_above_threshold: e.target.value ? Number(e.target.value) : null,
                 }))}
               />
             </div>
