@@ -179,6 +179,27 @@ const OrderDetail: React.FC = () => {
     );
   }
 
+  const canCancel = order.status === 'pending' || order.status === 'confirmed';
+
+  const handleCancelOrder = useCallback(async () => {
+    if (!order) return;
+    setIsCancelling(true);
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .update({ status: 'cancelled' })
+        .eq('id', order.id);
+      if (error) throw error;
+      setOrder({ ...order, status: 'cancelled' });
+      toast.success('Order cancelled successfully');
+    } catch (err) {
+      console.error('Error cancelling order:', err);
+      toast.error('Failed to cancel order');
+    } finally {
+      setIsCancelling(false);
+    }
+  }, [order]);
+
   const status = statusConfig[order.status];
 
   return (
