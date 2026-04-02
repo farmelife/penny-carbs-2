@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useServiceModuleGuard } from '@/hooks/useServiceModuleGuard';
 import { useNavigate } from 'react-router-dom';
 import { format, addDays, isBefore, startOfDay } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
@@ -36,6 +37,7 @@ const getCustomerPrice = (item: FoodItem): number => {
 };
 
 const IndoorEventsQuickBooking: React.FC = () => {
+  useServiceModuleGuard('indoor_events');
   const navigate = useNavigate();
   const { user, profile } = useAuth();
   const { selectedPanchayat, selectedWardNumber } = useLocation();
