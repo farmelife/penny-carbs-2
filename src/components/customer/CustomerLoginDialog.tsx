@@ -236,26 +236,75 @@ const CustomerLoginDialog: React.FC<CustomerLoginDialogProps> = ({
       }
 
       // Staff member found - log them in as customer
-      const { error } = await customerSignIn(data.mobileNumber);
-      if (error) {
-        // If they don't have a customer account, try signing them up silently
-        if (error.message.includes('not found')) {
-          toast({
-            title: 'Staff Quick Access',
-            description: 'You can now browse as a customer. Note: You cannot access dashboards in this mode.',
-          });
-          // Set a session flag for staff browsing mode
-          sessionStorage.setItem('staff_browse_mode', 'true');
-          sessionStorage.setItem('staff_mobile', data.mobileNumber);
-          onOpenChange(false);
-          onLoginSuccess?.();
-        } else {
-          toast({ title: 'Access failed', description: error.message, variant: 'destructive' });
+      let { error } = await customerSignIn(data.mobileNumber);
+      
+      if (error && error.message.includes('not found')) {
+        // Auto-create a customer account for this staff member
+        // Get staff name and panchayat info
+        let staffName = 'Staff User';
+        let staffPanchayatId = panchayats[0]?.id || '';
+        let staffWard = 1;
+
+        if (cookData) {
+          staffName = cookData.mobile_number;
+          // Get cook's panchayat
+          const { data: cookFull } = await supabase
+            .from('cooks')
+            .select('kitchen_name, panchayat_id')
+            .eq('id', cookData.id)
+            .maybeSingle();
+          if (cookFull) {
+            staffName = cookFull.kitchen_name;
+            if (cookFull.panchayat_id) staffPanchayatId = cookFull.panchayat_id;
+          }
+        } else if (deliveryData) {
+          const { data: dsFull } = await supabase
+            .from('delivery_staff')
+            .select('name, panchayat_id')
+            .eq('id', deliveryData.id)
+            .maybeSingle();
+          if (dsFull) {
+            staffName = dsFull.name;
+            if (dsFull.panchayat_id) staffPanchayatId = dsFull.panchayat_id;
+          }
+        } else if (profileData) {
+          const { data: prof } = await supabase
+            .from('profiles')
+            .select('name, panchayat_id, ward_number')
+            .eq('user_id', profileData.user_id)
+            .maybeSingle();
+          if (prof) {
+            staffName = prof.name;
+            if (prof.panchayat_id) staffPanchayatId = prof.panchayat_id;
+            if (prof.ward_number) staffWard = prof.ward_number;
+          }
         }
+
+        // Sign up as customer
+        const { error: signupError } = await customerSignUp(
+          data.mobileNumber,
+          staffName,
+          staffPanchayatId,
+          staffWard
+        );
+
+        if (signupError) {
+          toast({ title: 'Access failed', description: signupError.message, variant: 'destructive' });
+          setIsSubmitting(false);
+          return;
+        }
+
+        // Now sign in
+        const result = await customerSignIn(data.mobileNumber);
+        error = result.error;
+      }
+
+      if (error) {
+        toast({ title: 'Access failed', description: error.message, variant: 'destructive' });
       } else {
         toast({
           title: 'Staff Quick Access',
-          description: 'You are now browsing as a customer. Use staff login for dashboard access.',
+          description: 'You are now browsing as a customer.',
         });
         sessionStorage.setItem('staff_browse_mode', 'true');
         onOpenChange(false);
