@@ -63,6 +63,7 @@ const OrderDetail: React.FC = () => {
   const [order, setOrder] = useState<Order | null>(null);
   const [orderItems, setOrderItems] = useState<OrderItemWithFood[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isCancelling, setIsCancelling] = useState(false);
 
   const [cooksMap, setCooksMap] = useState<Record<string, CookInfo>>({});
 
