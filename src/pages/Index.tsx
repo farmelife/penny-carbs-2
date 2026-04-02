@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import AppHeader from '@/components/customer/AppHeader';
 import OperationalModules from '@/components/customer/OperationalModules';
 import BannerCarousel from '@/components/customer/BannerCarousel';
@@ -9,16 +9,37 @@ import PopularItems from '@/components/customer/PopularItems';
 import CartButton from '@/components/customer/CartButton';
 import BottomNav from '@/components/customer/BottomNav';
 import PendingCartBanner from '@/components/customer/PendingCartBanner';
+import CustomerLoginDialog from '@/components/customer/CustomerLoginDialog';
 import { useActiveServiceTypes } from '@/hooks/useServiceModules';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Index: React.FC = () => {
   const { data: activeTypes } = useActiveServiceTypes();
+  const { user, isLoading } = useAuth();
+  const [showLogin, setShowLogin] = useState(false);
+  const hasPrompted = useRef(false);
 
   const handleSearch = (query: string) => {
     console.log('Search:', query);
   };
 
   const isActive = (type: string) => activeTypes?.includes(type) ?? false;
+
+  // Prompt login on scroll for unauthenticated users
+  useEffect(() => {
+    if (isLoading || user || hasPrompted.current) return;
+
+    const handleScroll = () => {
+      if (window.scrollY > 200 && !hasPrompted.current) {
+        hasPrompted.current = true;
+        setShowLogin(true);
+        window.removeEventListener('scroll', handleScroll);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [user, isLoading]);
 
   return (
     <div className="min-h-screen pb-20 bg-[#fd5d08]">
@@ -62,6 +83,11 @@ const Index: React.FC = () => {
 
       <CartButton />
       <BottomNav />
+
+      <CustomerLoginDialog
+        open={showLogin}
+        onOpenChange={setShowLogin}
+      />
     </div>
   );
 };
