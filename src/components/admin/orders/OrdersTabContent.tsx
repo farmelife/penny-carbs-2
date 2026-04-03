@@ -583,29 +583,46 @@ const OrdersTabContent: React.FC<OrdersTabContentProps> = ({ serviceType }) => {
       )}
 
       {/* Cancel Order Confirmation Dialog */}
-      <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+      <AlertDialog open={cancelDialogOpen} onOpenChange={(open) => {
+        setCancelDialogOpen(open);
+        if (!open) {
+          setOrderToCancel(null);
+          setCancellationReason('');
+        }
+      }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 text-destructive">
               <AlertTriangle className="h-5 w-5" />
               Cancel Order
             </AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to cancel order{' '}
-              <span className="font-mono font-semibold">#{orderToCancel?.order_number}</span>?
-              <br />
-              <span className="text-destructive font-medium">This action cannot be undone.</span>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>
+                  Are you sure you want to cancel order{' '}
+                  <span className="font-mono font-semibold">#{orderToCancel?.order_number}</span>?
+                </p>
+                <Textarea
+                  placeholder="Enter cancellation reason (required)..."
+                  value={cancellationReason}
+                  onChange={(e) => setCancellationReason(e.target.value)}
+                  className="min-h-[80px]"
+                />
+                <p className="text-destructive font-medium text-xs">This action cannot be undone.</p>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>No, Keep Order</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={!cancellationReason.trim()}
               onClick={() => {
-                if (orderToCancel) {
-                  updateOrderStatus(orderToCancel.id, 'cancelled');
+                if (orderToCancel && cancellationReason.trim()) {
+                  updateOrderStatus(orderToCancel.id, 'cancelled', cancellationReason.trim());
                   setCancelDialogOpen(false);
                   setOrderToCancel(null);
+                  setCancellationReason('');
                 }
               }}
             >
