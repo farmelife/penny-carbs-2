@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Package, Clock, CheckCircle, XCircle, Truck, Search, AlertTriangle, ChevronDown, MapPin, User, UtensilsCrossed, Phone, MessageCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -71,6 +72,7 @@ const OrdersTabContent: React.FC<OrdersTabContentProps> = ({ serviceType }) => {
   const [statusFilter, setStatusFilter] = useState<OrderStatus | 'all'>('all');
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [orderToCancel, setOrderToCancel] = useState<OrderWithProfile | null>(null);
+  const [cancellationReason, setCancellationReason] = useState('');
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [orderDetails, setOrderDetails] = useState<Record<string, OrderDetail>>({});
   const [loadingDetails, setLoadingDetails] = useState<Record<string, boolean>>({});
@@ -218,11 +220,15 @@ const OrdersTabContent: React.FC<OrdersTabContentProps> = ({ serviceType }) => {
 
 
 
-  const updateOrderStatus = async (orderId: string, newStatus: OrderStatus) => {
+  const updateOrderStatus = async (orderId: string, newStatus: OrderStatus, reason?: string) => {
     try {
+      const updateData: Record<string, unknown> = { status: newStatus, updated_at: new Date().toISOString() };
+      if (newStatus === 'cancelled' && reason) {
+        updateData.cancellation_reason = reason;
+      }
       const { error } = await supabase
         .from('orders')
-        .update({ status: newStatus, updated_at: new Date().toISOString() })
+        .update(updateData)
         .eq('id', orderId);
 
       if (error) throw error;
@@ -363,6 +369,13 @@ const OrdersTabContent: React.FC<OrdersTabContentProps> = ({ serviceType }) => {
                     {/* Expanded Order Details */}
                     <CollapsibleContent>
                       <div className="mt-4 pt-3 border-t space-y-4">
+                        {/* Cancellation Reason */}
+                        {order.status === 'cancelled' && order.cancellation_reason && (
+                          <div className="rounded-md bg-destructive/10 p-3 text-sm">
+                            <p className="font-semibold text-destructive text-xs mb-1">Cancellation Reason:</p>
+                            <p className="text-foreground">{order.cancellation_reason}</p>
+                          </div>
+                        )}
                         {isDetailsLoading ? (
                           <div className="space-y-2">
                             <Skeleton className="h-4 w-full" />
@@ -535,6 +548,7 @@ const OrdersTabContent: React.FC<OrdersTabContentProps> = ({ serviceType }) => {
                               variant="destructive"
                               onClick={() => {
                                 setOrderToCancel(order);
+                                setCancellationReason('');
                                 setCancelDialogOpen(true);
                               }}
                             >
@@ -576,29 +590,46 @@ const OrdersTabContent: React.FC<OrdersTabContentProps> = ({ serviceType }) => {
       )}
 
       {/* Cancel Order Confirmation Dialog */}
-      <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+      <AlertDialog open={cancelDialogOpen} onOpenChange={(open) => {
+        setCancelDialogOpen(open);
+        if (!open) {
+          setOrderToCancel(null);
+          setCancellationReason('');
+        }
+      }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 text-destructive">
               <AlertTriangle className="h-5 w-5" />
               Cancel Order
             </AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to cancel order{' '}
-              <span className="font-mono font-semibold">#{orderToCancel?.order_number}</span>?
-              <br />
-              <span className="text-destructive font-medium">This action cannot be undone.</span>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>
+                  Are you sure you want to cancel order{' '}
+                  <span className="font-mono font-semibold">#{orderToCancel?.order_number}</span>?
+                </p>
+                <Textarea
+                  placeholder="Enter cancellation reason (required)..."
+                  value={cancellationReason}
+                  onChange={(e) => setCancellationReason(e.target.value)}
+                  className="min-h-[80px]"
+                />
+                <p className="text-destructive font-medium text-xs">This action cannot be undone.</p>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>No, Keep Order</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={!cancellationReason.trim()}
               onClick={() => {
-                if (orderToCancel) {
-                  updateOrderStatus(orderToCancel.id, 'cancelled');
+                if (orderToCancel && cancellationReason.trim()) {
+                  updateOrderStatus(orderToCancel.id, 'cancelled', cancellationReason.trim());
                   setCancelDialogOpen(false);
                   setOrderToCancel(null);
+                  setCancellationReason('');
                 }
               }}
             >

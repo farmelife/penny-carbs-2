@@ -75,13 +75,24 @@ const OrderDetail: React.FC = () => {
       }
 
       try {
-        // Fetch order
-        const { data: orderData, error: orderError } = await supabase
+        // Fetch order - admins can view any order, customers only their own
+        let orderQuery = supabase
           .from('orders')
           .select('*')
-          .eq('id', orderId)
-          .eq('customer_id', user.id)
-          .single();
+          .eq('id', orderId);
+
+        // Only filter by customer_id for non-admin users
+        const { data: userRoles } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id);
+        
+        const isAdmin = userRoles?.some(r => r.role === 'super_admin' || r.role === 'admin');
+        if (!isAdmin) {
+          orderQuery = orderQuery.eq('customer_id', user.id);
+        }
+
+        const { data: orderData, error: orderError } = await orderQuery.single();
 
         if (orderError) throw orderError;
         setOrder(orderData as Order);
