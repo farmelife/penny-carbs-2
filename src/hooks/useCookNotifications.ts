@@ -87,7 +87,7 @@ export function useCookNotifications() {
     };
   }, []);
 
-  // Subscribe to real-time assignment changes
+  // Subscribe to real-time assignment changes + cancellation updates
   useEffect(() => {
     if (!profile?.id) return;
 
@@ -115,7 +115,40 @@ export function useCookNotifications() {
             });
             setShowAlert(true);
             playNotificationSound();
-            showBrowserNotification(orderDetails); // Trigger browser notification
+            showBrowserNotification(orderDetails);
+            queryClient.invalidateQueries({ queryKey: ['cook-orders'] });
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'order_assigned_cooks',
+          filter: `cook_id=eq.${profile.id}`,
+        },
+        (payload) => {
+          const updated = payload.new as any;
+          if (updated.cook_status === 'rejected') {
+            console.log('[CookNotifications] Assignment rejected/cancelled:', updated.order_id);
+            setPendingOrders(prev => prev.filter(o => o.id !== updated.order_id));
+            queryClient.invalidateQueries({ queryKey: ['cook-orders'] });
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'orders',
+        },
+        (payload) => {
+          const updated = payload.new as any;
+          if (updated.status === 'cancelled') {
+            console.log('[CookNotifications] Order cancelled:', updated.id);
+            setPendingOrders(prev => prev.filter(o => o.id !== updated.id));
             queryClient.invalidateQueries({ queryKey: ['cook-orders'] });
           }
         }
