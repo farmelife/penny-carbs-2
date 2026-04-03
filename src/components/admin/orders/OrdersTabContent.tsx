@@ -207,6 +207,53 @@ const OrdersTabContent: React.FC<OrdersTabContentProps> = ({ serviceType }) => {
                     </div>
                   </div>
 
+                  {/* Quick Actions: WhatsApp, Call, View Detail */}
+                  <div className="mt-2 flex items-center gap-2">
+                    {order.profiles?.mobile_number && (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="gap-1.5 text-green-600 border-green-200 hover:bg-green-50 hover:text-green-700"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const phone = order.profiles!.mobile_number.replace(/\D/g, '');
+                            const fullPhone = phone.startsWith('91') ? phone : `91${phone}`;
+                            window.open(`https://wa.me/${fullPhone}?text=Hi%20${encodeURIComponent(order.profiles!.name)}%2C%20regarding%20your%20order%20%23${order.order_number}`, '_blank');
+                          }}
+                        >
+                          <MessageCircle className="h-3.5 w-3.5" />
+                          WhatsApp
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="gap-1.5 text-blue-600 border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            window.open(`tel:${order.profiles!.mobile_number}`, '_self');
+                          }}
+                        >
+                          <Phone className="h-3.5 w-3.5" />
+                          Call
+                        </Button>
+                      </>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="gap-1.5 ml-auto"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/order/${order.id}`);
+                      }}
+                    >
+                      <Eye className="h-3.5 w-3.5" />
+                      Details
+                    </Button>
+                  </div>
+                  </div>
+
                   <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
                     <div>
                       <span className="text-muted-foreground">Amount: </span>
