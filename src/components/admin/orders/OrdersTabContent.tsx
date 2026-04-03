@@ -205,6 +205,8 @@ const OrdersTabContent: React.FC<OrdersTabContentProps> = ({ serviceType }) => {
   };
 
   useEffect(() => {
+    setSearchQuery('');
+    setExpandedOrderId(null);
     fetchOrders();
   }, [statusFilter, serviceType]);
 
