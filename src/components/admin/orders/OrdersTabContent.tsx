@@ -108,11 +108,15 @@ const OrdersTabContent: React.FC<OrdersTabContentProps> = ({ serviceType }) => {
 
 
 
-  const updateOrderStatus = async (orderId: string, newStatus: OrderStatus) => {
+  const updateOrderStatus = async (orderId: string, newStatus: OrderStatus, reason?: string) => {
     try {
+      const updateData: Record<string, unknown> = { status: newStatus, updated_at: new Date().toISOString() };
+      if (newStatus === 'cancelled' && reason) {
+        updateData.cancellation_reason = reason;
+      }
       const { error } = await supabase
         .from('orders')
-        .update({ status: newStatus, updated_at: new Date().toISOString() })
+        .update(updateData)
         .eq('id', orderId);
 
       if (error) throw error;
