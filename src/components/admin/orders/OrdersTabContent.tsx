@@ -8,7 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Package, Clock, CheckCircle, XCircle, Truck, Search, AlertTriangle, ChevronDown, MapPin, User, UtensilsCrossed, Phone } from 'lucide-react';
+import { Package, Clock, CheckCircle, XCircle, Truck, Search, AlertTriangle, ChevronDown, MapPin, User, UtensilsCrossed, Phone, MessageCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -205,6 +205,8 @@ const OrdersTabContent: React.FC<OrdersTabContentProps> = ({ serviceType }) => {
   };
 
   useEffect(() => {
+    setSearchQuery('');
+    setExpandedOrderId(null);
     fetchOrders();
   }, [statusFilter, serviceType]);
 
@@ -296,9 +298,27 @@ const OrdersTabContent: React.FC<OrdersTabContentProps> = ({ serviceType }) => {
                           <p className="text-sm text-muted-foreground">
                             {order.profiles?.name || 'Unknown Customer'}
                           </p>
-                          <p className="text-xs text-muted-foreground">
-                            {order.profiles?.mobile_number}
-                          </p>
+                          {order.profiles?.mobile_number && (
+                            <div className="flex items-center gap-1.5 mt-1">
+                              <span className="text-xs text-muted-foreground">{order.profiles.mobile_number}</span>
+                              <a
+                                href={`tel:${order.profiles.mobile_number}`}
+                                onClick={(e) => e.stopPropagation()}
+                                className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
+                              >
+                                <Phone className="h-3 w-3" />
+                              </a>
+                              <a
+                                href={`https://wa.me/91${order.profiles.mobile_number.replace(/\D/g, '').slice(-10)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-green-600 text-white hover:bg-green-700"
+                              >
+                                <MessageCircle className="h-3 w-3" />
+                              </a>
+                            </div>
+                          )}
                         </div>
                         <div className="flex flex-col items-end gap-1">
                           <Badge className={`gap-1 ${status.color}`}>
@@ -436,9 +456,11 @@ const OrdersTabContent: React.FC<OrdersTabContentProps> = ({ serviceType }) => {
                                   </h4>
                                   <div className="text-xs space-y-0.5">
                                     <p>{details.cook.kitchen_name}</p>
-                                    <p className="flex items-center gap-1 text-muted-foreground">
+                                    <p className="flex items-center gap-1.5 text-muted-foreground">
                                       <Phone className="h-3 w-3" />
                                       {details.cook.mobile_number}
+                                      <a href={`tel:${details.cook.mobile_number}`} className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-primary text-primary-foreground"><Phone className="h-2.5 w-2.5" /></a>
+                                      <a href={`https://wa.me/91${details.cook.mobile_number.replace(/\D/g, '').slice(-10)}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-green-600 text-white"><MessageCircle className="h-2.5 w-2.5" /></a>
                                     </p>
                                     {order.cook_status && (
                                       <Badge variant="outline" className="text-xs capitalize mt-1">
@@ -458,9 +480,11 @@ const OrdersTabContent: React.FC<OrdersTabContentProps> = ({ serviceType }) => {
                                   </h4>
                                   <div className="text-xs space-y-0.5">
                                     <p>{details.delivery_staff.name}</p>
-                                    <p className="flex items-center gap-1 text-muted-foreground">
+                                    <p className="flex items-center gap-1.5 text-muted-foreground">
                                       <Phone className="h-3 w-3" />
                                       {details.delivery_staff.mobile_number}
+                                      <a href={`tel:${details.delivery_staff.mobile_number}`} className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-primary text-primary-foreground"><Phone className="h-2.5 w-2.5" /></a>
+                                      <a href={`https://wa.me/91${details.delivery_staff.mobile_number.replace(/\D/g, '').slice(-10)}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-green-600 text-white"><MessageCircle className="h-2.5 w-2.5" /></a>
                                     </p>
                                     <p className="text-muted-foreground capitalize">{details.delivery_staff.vehicle_type}</p>
                                     {order.delivery_status && (
