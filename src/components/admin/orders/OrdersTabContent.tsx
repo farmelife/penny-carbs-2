@@ -44,6 +44,7 @@ interface OrdersTabContentProps {
 
 const OrdersTabContent: React.FC<OrdersTabContentProps> = ({ serviceType }) => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [orders, setOrders] = useState<OrderWithProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
