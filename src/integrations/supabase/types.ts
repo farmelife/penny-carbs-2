@@ -1978,6 +1978,36 @@ export type Database = {
         }
         Relationships: []
       }
+      storage_providers: {
+        Row: {
+          created_at: string
+          credentials: Json
+          id: string
+          is_enabled: boolean
+          priority: number
+          provider_name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          credentials?: Json
+          id?: string
+          is_enabled?: boolean
+          priority?: number
+          provider_name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          credentials?: Json
+          id?: string
+          is_enabled?: boolean
+          priority?: number
+          provider_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
