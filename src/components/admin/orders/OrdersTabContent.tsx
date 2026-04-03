@@ -52,7 +52,7 @@ const OrdersTabContent: React.FC<OrdersTabContentProps> = ({ serviceType }) => {
   const [statusFilter, setStatusFilter] = useState<OrderStatus | 'all'>('all');
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [orderToCancel, setOrderToCancel] = useState<OrderWithProfile | null>(null);
-
+  const [cancelReason, setCancelReason] = useState('');
   const fetchOrders = async () => {
     setIsLoading(true);
     try {
