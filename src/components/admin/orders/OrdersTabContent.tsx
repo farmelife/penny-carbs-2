@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Package, Clock, CheckCircle, XCircle, Truck, Search, AlertTriangle, MessageCircle, Phone, Eye } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
