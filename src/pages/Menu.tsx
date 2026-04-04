@@ -113,7 +113,7 @@ const Menu: React.FC = () => {
     };
 
     fetchData();
-  }, [validServiceType, allocatedIds, allocatedIdsReady, isHomemade]);
+  }, [validServiceType, allocatedIds, allocatedIdsReady, needsCookCheck]);
 
   const handleAddToCart = async (e: React.MouseEvent, item: FoodItemWithImages) => {
     e.stopPropagation();
