@@ -15,7 +15,7 @@ export function useCookAllocatedDishes() {
       const { data, error } = await supabase
         .from('cook_dishes')
         .select(`
-          id, cook_id, food_item_id, allocated_at, allocated_by, created_at, updated_at, custom_price, is_coming_soon,
+          id, cook_id, food_item_id, allocated_at, allocated_by, created_at, updated_at, custom_price, is_coming_soon, youtube_video_url,
           food_item:food_items(id, name, price, category_id, is_vegetarian, category:food_categories(name)),
           images:cook_dish_images(id, image_url, display_order)
         `)

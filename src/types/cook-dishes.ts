@@ -10,6 +10,7 @@ export interface CookDish {
   updated_at: string;
   custom_price: number | null;
   is_coming_soon: boolean;
+  youtube_video_url: string | null;
   food_item?: {
     id: string;
     name: string;
