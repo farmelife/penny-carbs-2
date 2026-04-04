@@ -1,64 +1,45 @@
 
 
-## Problem
-The cook dashboard's "My Allocated Dishes" section has no image upload functionality. Cooks cannot add or update images for their allocated dishes.
+## Fix: Block Cloud Kitchen Items Without Assigned Cooks
 
-## Root Cause
-- `CookAllocatedDishes.tsx` does not include the `ImageUpload` component
-- The `useCookAllocatedDishes` hook does not fetch `food_item_images`
-- There are likely no RLS policies on `food_item_images` allowing cook-role inserts
+**Problem**: Cloud kitchen items (like "Carbs Brost Chicken Mega Offer @299/-") are visible and orderable by customers even when no cook is assigned to that item. Only homemade items currently check for cook allocation — cloud kitchen items only check if the division/slot is active.
 
-## Plan
+**Root Cause**: Multiple customer-facing components filter homemade items by cook allocation but skip that check for cloud kitchen items.
 
-### 1. Database: Add RLS policy for cooks on `food_item_images`
-Create a migration allowing cooks to insert/update/delete images for food items they are allocated via `cook_dishes`.
+### Changes Required
 
-```sql
--- Allow cooks to manage images for their allocated dishes
-CREATE POLICY "Cooks can insert images for their dishes"
-ON public.food_item_images FOR INSERT TO authenticated
-WITH CHECK (
-  EXISTS (
-    SELECT 1 FROM public.cook_dishes cd
-    JOIN public.cooks c ON c.id = cd.cook_id
-    WHERE cd.food_item_id = food_item_images.food_item_id
-      AND c.user_id = auth.uid()
-  )
-);
+**1. FeaturedItems (`src/components/customer/FeaturedItems.tsx`)**
+- Add cook allocation check for `cloud_kitchen` items alongside the existing `homemade` check
+- If a cloud kitchen item has no cook allocated (not in `allocatedIds`), filter it out
 
-CREATE POLICY "Cooks can delete images for their dishes"
-ON public.food_item_images FOR DELETE TO authenticated
-USING (
-  EXISTS (
-    SELECT 1 FROM public.cook_dishes cd
-    JOIN public.cooks c ON c.id = cd.cook_id
-    WHERE cd.food_item_id = food_item_images.food_item_id
-      AND c.user_id = auth.uid()
-  )
-);
+**2. PopularItems (`src/components/customer/PopularItems.tsx`)**
+- Same fix: after the active slot check for cloud kitchen items, also verify the item has at least one allocated cook via `allocatedIds`
+
+**3. Menu page (`src/pages/Menu.tsx`)**
+- Extend the homemade cook-allocation filter to also apply to cloud kitchen items
+- Items of type `cloud_kitchen` without any cook allocation should be hidden
+
+**4. ItemDetail page (`src/pages/ItemDetail.tsx`)**
+- Extend the cook availability check (currently homemade-only) to also apply to cloud kitchen items
+- Fetch cook_dishes for cloud kitchen items the same way as homemade
+- Show "No Cooks Available" disabled button when a cloud kitchen item has no cooks assigned (for the customer's panchayat)
+
+### Technical Detail
+
+The existing `useCookAllocatedItemIds` hook already fetches all `cook_dishes` regardless of service type and filters by active/available cooks and panchayat. So the allocated IDs set already contains cloud kitchen items that have cooks — we just need to use it for filtering cloud kitchen items too.
+
+In each component, the change is small: where we currently have:
+```
+if (item.service_type === 'homemade' && allocatedIds) {
+  return allocatedIds.has(item.id);
+}
+```
+We add cloud_kitchen to the same check:
+```
+if ((item.service_type === 'homemade' || item.service_type === 'cloud_kitchen') && allocatedIds) {
+  return allocatedIds.has(item.id);
+}
 ```
 
-Also add a storage policy on the `food-items` bucket for cook uploads if missing.
-
-### 2. Update `useCookAllocatedDishes` hook
-Add `food_item_images` to the select query so existing images are fetched:
-```
-food_item:food_items(id, name, price, ..., images:food_item_images(id, image_url, is_primary))
-```
-
-### 3. Update `CookAllocatedDishes.tsx`
-- Import `ImageUpload` component
-- For each dish card, show the current dish image (from `food_item_images`) and an `ImageUpload` button
-- On upload complete: upsert into `food_item_images` (delete existing, insert new with `is_primary: true`)
-- On remove: delete from `food_item_images`
-- Invalidate query on success
-
-### 4. Update `CookDish` type
-Add optional `images` array to the `food_item` nested type in `src/types/cook-dishes.ts`.
-
-### Files Changed
-- `src/types/cook-dishes.ts` — add images to food_item type
-- `src/hooks/useCookDishes.ts` — include food_item_images in query
-- `src/components/cook/CookAllocatedDishes.tsx` — add ImageUpload per dish
-- New migration — RLS policies for cook image management
+For ItemDetail, we extend the cook-fetching logic (lines 77-131) to also run for cloud kitchen items, and extend `noCooksAvailable` to cover both service types.
 
