@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
 import { Upload, Loader2, X } from 'lucide-react';
-import { useActiveStorageProvider } from '@/hooks/useStorageProviders';
+import { useActiveStorageProvider, StorageProvider } from '@/hooks/useStorageProviders';
 
 interface DishImage {
   id: string;
@@ -21,6 +21,107 @@ interface DishMediaManagerProps {
 }
 
 const MAX_IMAGES = 3;
+const MAX_FILE_SIZE = 1 * 1024 * 1024; // 1 MB
+const TARGET_SIZE = 100 * 1024; // 100 KB
+
+/**
+ * Compress an image file to target size using canvas.
+ * Iteratively reduces quality until the output is below targetBytes.
+ */
+const compressImage = (file: File, targetBytes: number): Promise<File> => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+
+      // Scale down if very large
+      let { width, height } = img;
+      const MAX_DIM = 1200;
+      if (width > MAX_DIM || height > MAX_DIM) {
+        const ratio = Math.min(MAX_DIM / width, MAX_DIM / height);
+        width = Math.round(width * ratio);
+        height = Math.round(height * ratio);
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) { reject(new Error('Canvas not supported')); return; }
+      ctx.drawImage(img, 0, 0, width, height);
+
+      // Iteratively lower quality
+      let quality = 0.7;
+      const tryCompress = () => {
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) { reject(new Error('Compression failed')); return; }
+            if (blob.size <= targetBytes || quality <= 0.1) {
+              const compressed = new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), {
+                type: 'image/jpeg',
+              });
+              resolve(compressed);
+            } else {
+              quality -= 0.1;
+              tryCompress();
+            }
+          },
+          'image/jpeg',
+          quality
+        );
+      };
+      tryCompress();
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Failed to load image')); };
+    img.src = url;
+  });
+};
+
+const uploadToCloudinary = async (file: File, provider: StorageProvider): Promise<string> => {
+  const { cloud_name, upload_preset } = provider.credentials;
+  if (!cloud_name || !upload_preset) throw new Error('Cloudinary credentials missing');
+
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('upload_preset', upload_preset);
+
+  const res = await fetch(`https://api.cloudinary.com/v1_1/${cloud_name}/image/upload`, {
+    method: 'POST', body: formData,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.error?.message || 'Cloudinary upload failed');
+  }
+  return (await res.json()).secure_url;
+};
+
+const uploadToCustomEndpoint = async (file: File, provider: StorageProvider): Promise<string> => {
+  const { endpoint_url, auth_header, response_url_path } = provider.credentials;
+  if (!endpoint_url) throw new Error('Custom endpoint URL required');
+
+  const formData = new FormData();
+  formData.append('file', file);
+  const headers: Record<string, string> = {};
+  if (auth_header) headers['Authorization'] = auth_header;
+
+  const res = await fetch(endpoint_url, { method: 'POST', body: formData, headers });
+  if (!res.ok) throw new Error('Custom upload failed');
+
+  const data = await res.json();
+  const path = response_url_path || 'url';
+  const url = path.split('.').reduce((obj: any, key: string) => obj?.[key], data);
+  if (typeof url !== 'string') throw new Error('Could not extract URL');
+  return url;
+};
+
+const uploadToProvider = async (file: File, provider: StorageProvider): Promise<string> => {
+  switch (provider.provider_name) {
+    case 'cloudinary': return uploadToCloudinary(file, provider);
+    case 'custom': return uploadToCustomEndpoint(file, provider);
+    default: throw new Error(`Provider "${provider.provider_name}" not supported`);
+  }
+};
 
 const DishMediaManager: React.FC<DishMediaManagerProps> = ({ cookDishId, images, youtubeVideoUrl }) => {
   const queryClient = useQueryClient();
@@ -30,25 +131,51 @@ const DishMediaManager: React.FC<DishMediaManagerProps> = ({ cookDishId, images,
   const [savingVideo, setSavingVideo] = useState(false);
   const fileInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  // Build slot data: 3 slots, filled from images array by display_order
   const slots = Array.from({ length: MAX_IMAGES }, (_, i) => {
     return images.find(img => img.display_order === i) || null;
   });
 
-  const uploadToSupabase = async (file: File): Promise<string> => {
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-    const filePath = `cook-dishes/${cookDishId}/${fileName}`;
+  const handleFileUpload = async (slotIndex: number, file: File) => {
+    if (!file.type.startsWith('image/')) {
+      toast({ title: 'Invalid file', description: 'Please select an image', variant: 'destructive' });
+      return;
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      toast({ title: 'File too large', description: 'Maximum image size is 1 MB', variant: 'destructive' });
+      return;
+    }
 
-    const { error: uploadError } = await supabase.storage
-      .from('food-items')
-      .upload(filePath, file);
-    if (uploadError) throw uploadError;
+    if (!activeProvider) {
+      toast({ title: 'No storage configured', description: 'Ask admin to configure external storage in Admin → Storage Settings', variant: 'destructive' });
+      return;
+    }
 
-    const { data: urlData } = supabase.storage
-      .from('food-items')
-      .getPublicUrl(filePath);
-    return urlData.publicUrl;
+    setUploadingSlot(slotIndex);
+    try {
+      // Compress image to below 100 KB
+      const compressed = await compressImage(file, TARGET_SIZE);
+
+      // Upload to external provider
+      const url = await uploadToProvider(compressed, activeProvider);
+
+      // Save to DB
+      const existing = slots[slotIndex];
+      if (existing) {
+        await supabase.from('cook_dish_images').delete().eq('id', existing.id);
+      }
+      const { error } = await supabase.from('cook_dish_images').insert({
+        cook_dish_id: cookDishId,
+        image_url: url,
+        display_order: slotIndex,
+      });
+      if (error) throw error;
+      toast({ title: 'Image uploaded' });
+      queryClient.invalidateQueries({ queryKey: ['cook-allocated-dishes'] });
+    } catch (err: any) {
+      toast({ title: 'Upload failed', description: err.message, variant: 'destructive' });
+    } finally {
+      setUploadingSlot(null);
+    }
   };
 
   const handleSaveUrl = async (slotIndex: number, url: string) => {
@@ -68,37 +195,6 @@ const DishMediaManager: React.FC<DishMediaManagerProps> = ({ cookDishId, images,
       queryClient.invalidateQueries({ queryKey: ['cook-allocated-dishes'] });
     } catch (err: any) {
       toast({ title: 'Failed to save image', description: err.message, variant: 'destructive' });
-    }
-  };
-
-  const handleFileUpload = async (slotIndex: number, file: File) => {
-    if (!file.type.startsWith('image/')) {
-      toast({ title: 'Invalid file', description: 'Please select an image', variant: 'destructive' });
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      toast({ title: 'File too large', description: 'Max 5MB', variant: 'destructive' });
-      return;
-    }
-    setUploadingSlot(slotIndex);
-    try {
-      const url = await uploadToSupabase(file);
-      const existing = slots[slotIndex];
-      if (existing) {
-        await supabase.from('cook_dish_images').delete().eq('id', existing.id);
-      }
-      const { error } = await supabase.from('cook_dish_images').insert({
-        cook_dish_id: cookDishId,
-        image_url: url,
-        display_order: slotIndex,
-      });
-      if (error) throw error;
-      toast({ title: 'Image uploaded' });
-      queryClient.invalidateQueries({ queryKey: ['cook-allocated-dishes'] });
-    } catch (err: any) {
-      toast({ title: 'Upload failed', description: err.message, variant: 'destructive' });
-    } finally {
-      setUploadingSlot(null);
     }
   };
 
