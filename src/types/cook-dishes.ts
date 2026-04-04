@@ -20,6 +20,11 @@ export interface CookDish {
       name: string;
     };
   };
+  images?: {
+    id: string;
+    image_url: string;
+    display_order: number;
+  }[];
 }
 
 export type DishRequestStatus = 'pending' | 'approved' | 'rejected';
