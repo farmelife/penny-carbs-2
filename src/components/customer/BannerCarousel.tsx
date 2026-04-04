@@ -138,9 +138,9 @@ const BannerCarousel: React.FC = () => {
         <CarouselContent className="-ml-3">
           {banners.map((banner) => (
             <CarouselItem key={banner.id} className={`pl-3 ${isMobile ? 'basis-full' : 'basis-1/3'}`}>
-              <a
-                href={banner.link_url || '#'}
-                className="relative block overflow-hidden rounded-xl aspect-[3/4]"
+              <div
+                onClick={() => handleBannerClick(banner)}
+                className="relative block overflow-hidden rounded-xl aspect-[3/4] cursor-pointer"
               >
                 <img
                   src={banner.image_url}
@@ -151,7 +151,7 @@ const BannerCarousel: React.FC = () => {
                 <div className="absolute bottom-4 left-4 right-4">
                   <h3 className="text-lg font-bold text-white">{banner.title}</h3>
                 </div>
-              </a>
+              </div>
             </CarouselItem>
           ))}
         </CarouselContent>
