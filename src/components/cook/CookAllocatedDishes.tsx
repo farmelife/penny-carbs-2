@@ -11,7 +11,7 @@ import { toast } from '@/hooks/use-toast';
 import { Switch } from '@/components/ui/switch';
 import { ChefHat, Leaf, IndianRupee, Check, X } from 'lucide-react';
 import DishFeaturesManager from './DishFeaturesManager';
-import ImageUpload from '@/components/admin/ImageUpload';
+import DishMediaManager from './DishMediaManager';
 
 const CookAllocatedDishes: React.FC = () => {
   const { data: allocatedDishes, isLoading } = useCookAllocatedDishes();
@@ -63,34 +63,6 @@ const CookAllocatedDishes: React.FC = () => {
     }
   };
 
-  const handleImageUpload = async (cookDishId: string, imageUrl: string) => {
-    try {
-      const { error } = await supabase
-        .from('cook_dish_images')
-        .insert({
-          cook_dish_id: cookDishId,
-          image_url: imageUrl,
-          display_order: 0,
-        });
-      if (error) throw error;
-      queryClient.invalidateQueries({ queryKey: ['cook-allocated-dishes'] });
-    } catch (error: any) {
-      toast({ title: 'Failed to save image', description: error.message, variant: 'destructive' });
-    }
-  };
-
-  const handleImageRemove = async (cookDishId: string) => {
-    try {
-      const { error } = await supabase
-        .from('cook_dish_images')
-        .delete()
-        .eq('cook_dish_id', cookDishId);
-      if (error) throw error;
-      queryClient.invalidateQueries({ queryKey: ['cook-allocated-dishes'] });
-    } catch (error: any) {
-      toast({ title: 'Failed to remove image', description: error.message, variant: 'destructive' });
-    }
-  };
 
   return (
     <Card>
@@ -115,7 +87,6 @@ const CookAllocatedDishes: React.FC = () => {
               const basePrice = dish.food_item?.price || 0;
               const isEditing = editingId === dish.id;
               const displayPrice = dish.custom_price ?? basePrice;
-              const currentImage = dish.images?.[0]?.image_url || null;
 
               return (
                 <div key={dish.id} className="p-3 rounded-lg border bg-card space-y-2">
@@ -184,16 +155,11 @@ const CookAllocatedDishes: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="pt-1">
-                    <p className="text-xs text-muted-foreground mb-1">Dish Image</p>
-                    <ImageUpload
-                      bucket="food-items"
-                      folder={`cook-dishes/${dish.id}`}
-                      currentImageUrl={currentImage}
-                      onUploadComplete={(url) => handleImageUpload(dish.id, url)}
-                      onRemove={() => handleImageRemove(dish.id)}
-                    />
-                  </div>
+                  <DishMediaManager
+                    cookDishId={dish.id}
+                    images={dish.images || []}
+                    youtubeVideoUrl={dish.youtube_video_url || null}
+                  />
                 </div>
               );
             })}
