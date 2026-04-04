@@ -74,11 +74,12 @@ const ItemDetail: React.FC = () => {
         }
         setItem(data as FoodItemWithImages);
 
-        // For homemade items, fetch available cooks
+        // For homemade and cloud kitchen items, fetch available cooks
         const serviceTypes = (data as any).service_types || [];
         const isHomemade = data.service_type === 'homemade' || serviceTypes.includes('homemade');
+        const isCloudKitchenItem = data.service_type === 'cloud_kitchen' || serviceTypes.includes('cloud_kitchen');
         
-        if (isHomemade) {
+        if (isHomemade || isCloudKitchenItem) {
           const { data: cookDishes, error: cooksError } = await supabase
             .from('cook_dishes')
             .select(`
