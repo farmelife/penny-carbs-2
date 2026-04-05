@@ -34,6 +34,8 @@ const Checkout: React.FC = () => {
   const [deliveryAddress, setDeliveryAddress] = useState('');
   const [deliveryInstructions, setDeliveryInstructions] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const isUsingSavedAddress = useRef(false);
+  const { addresses, createAddress } = useCustomerAddresses();
 
   // Determine service type from cart items (assume all items have same service type)
   const serviceType = items[0]?.food_item?.service_type || 'cloud_kitchen';

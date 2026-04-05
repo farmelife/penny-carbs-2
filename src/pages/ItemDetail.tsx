@@ -227,12 +227,12 @@ const ItemDetail: React.FC = () => {
 
   const handleBuyNow = async () => {
     if (!item) return;
-    if (needsCookSelection) {
-      toast.error('Please select a cook first');
+    if (!user) {
+      setShowLoginDialog(true);
       return;
     }
-    if (!user) {
-      navigate('/auth');
+    if (needsCookSelection) {
+      toast.error('Please select a cook first');
       return;
     }
     if (hasOtherCartItems) {
