@@ -135,6 +135,24 @@ const DishMediaManager: React.FC<DishMediaManagerProps> = ({ cookDishId, images,
     return images.find(img => img.display_order === i) || null;
   });
 
+  const uploadToSupabase = async (file: File): Promise<string> => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+    const filePath = `cook-dishes/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('food-images')
+      .upload(filePath, file);
+
+    if (uploadError) throw uploadError;
+
+    const { data: urlData } = supabase.storage
+      .from('food-images')
+      .getPublicUrl(filePath);
+
+    return urlData.publicUrl;
+  };
+
   const handleFileUpload = async (slotIndex: number, file: File) => {
     if (!file.type.startsWith('image/')) {
       toast({ title: 'Invalid file', description: 'Please select an image', variant: 'destructive' });
@@ -145,20 +163,22 @@ const DishMediaManager: React.FC<DishMediaManagerProps> = ({ cookDishId, images,
       return;
     }
 
-    if (!activeProvider) {
-      toast({ title: 'No storage configured', description: 'Ask admin to configure external storage in Admin → Storage Settings', variant: 'destructive' });
-      return;
-    }
-
     setUploadingSlot(slotIndex);
     try {
-      // Compress image to below 100 KB
       const compressed = await compressImage(file, TARGET_SIZE);
 
-      // Upload to external provider
-      const url = await uploadToProvider(compressed, activeProvider);
+      let url: string;
+      if (activeProvider) {
+        try {
+          url = await uploadToProvider(compressed, activeProvider);
+        } catch (extError) {
+          console.warn('External provider failed, falling back to Supabase:', extError);
+          url = await uploadToSupabase(compressed);
+        }
+      } else {
+        url = await uploadToSupabase(compressed);
+      }
 
-      // Save to DB
       const existing = slots[slotIndex];
       if (existing) {
         await supabase.from('cook_dish_images').delete().eq('id', existing.id);
