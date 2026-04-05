@@ -131,6 +131,54 @@ const CookSelector: React.FC<CookSelectorProps> = ({ cooks, selectedCookId, onSe
           })}
         </div>
       </RadioGroup>
+
+      <Dialog open={lightboxOpen} onOpenChange={setLightboxOpen}>
+        <DialogContent className="max-w-[90vw] max-h-[90vh] p-0 bg-black/95 border-none flex items-center justify-center">
+          <button
+            onClick={() => setLightboxOpen(false)}
+            className="absolute top-3 right-3 z-50 text-white/70 hover:text-white"
+          >
+            <X className="h-6 w-6" />
+          </button>
+
+          {lightboxImages.length > 1 && (
+            <>
+              <button
+                onClick={() => setLightboxIndex((prev) => (prev - 1 + lightboxImages.length) % lightboxImages.length)}
+                className="absolute left-3 z-50 text-white/70 hover:text-white bg-black/40 rounded-full p-1.5"
+              >
+                <ChevronLeft className="h-6 w-6" />
+              </button>
+              <button
+                onClick={() => setLightboxIndex((prev) => (prev + 1) % lightboxImages.length)}
+                className="absolute right-12 z-50 text-white/70 hover:text-white bg-black/40 rounded-full p-1.5"
+              >
+                <ChevronRight className="h-6 w-6" />
+              </button>
+            </>
+          )}
+
+          {lightboxImages[lightboxIndex] && (
+            <img
+              src={lightboxImages[lightboxIndex].image_url}
+              alt="Dish image"
+              className="max-w-full max-h-[85vh] object-contain rounded"
+            />
+          )}
+
+          {lightboxImages.length > 1 && (
+            <div className="absolute bottom-4 flex gap-1.5">
+              {lightboxImages.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setLightboxIndex(i)}
+                  className={`w-2 h-2 rounded-full transition-colors ${i === lightboxIndex ? 'bg-white' : 'bg-white/40'}`}
+                />
+              ))}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
