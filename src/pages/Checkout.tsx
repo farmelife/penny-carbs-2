@@ -286,7 +286,13 @@ const Checkout: React.FC = () => {
               <Label>Select or enter delivery address *</Label>
               <AddressSelector
                 selectedAddress={deliveryAddress}
-                onAddressChange={setDeliveryAddress}
+                onAddressChange={(addr) => {
+                  setDeliveryAddress(addr);
+                  isUsingSavedAddress.current = false;
+                }}
+                onAddressSelect={() => {
+                  isUsingSavedAddress.current = true;
+                }}
               />
             </div>
 
