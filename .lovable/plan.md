@@ -1,45 +1,47 @@
 
 
-## Fix: Block Cloud Kitchen Items Without Assigned Cooks
+## Fix: Cook Dashboard Image Upload to Cloudinary
 
-**Problem**: Cloud kitchen items (like "Carbs Brost Chicken Mega Offer @299/-") are visible and orderable by customers even when no cook is assigned to that item. Only homemade items currently check for cook allocation — cloud kitchen items only check if the division/slot is active.
-
-**Root Cause**: Multiple customer-facing components filter homemade items by cook allocation but skip that check for cloud kitchen items.
+**Problem**: Cooks cannot upload images because:
+1. The `storage_providers` table has RLS that only allows admins to read — cooks get no data from `useActiveStorageProvider`, so Cloudinary is never used.
+2. The fallback to Supabase Storage also fails because the `food-images` bucket does not exist.
 
 ### Changes Required
 
-**1. FeaturedItems (`src/components/customer/FeaturedItems.tsx`)**
-- Add cook allocation check for `cloud_kitchen` items alongside the existing `homemade` check
-- If a cloud kitchen item has no cook allocated (not in `allocatedIds`), filter it out
+**1. Add RLS read policy for cooks on `storage_providers` (SQL migration)**
+- Add a SELECT policy allowing authenticated users (including cooks) to read enabled storage providers
+- This lets the `useActiveStorageProvider` hook return the Cloudinary config for cooks
 
-**2. PopularItems (`src/components/customer/PopularItems.tsx`)**
-- Same fix: after the active slot check for cloud kitchen items, also verify the item has at least one allocated cook via `allocatedIds`
+**2. Create the `food-images` storage bucket (SQL migration)**
+- Create a public `food-images` bucket so the Supabase fallback works
+- Add RLS policies on `storage.objects` allowing authenticated users to upload to this bucket
 
-**3. Menu page (`src/pages/Menu.tsx`)**
-- Extend the homemade cook-allocation filter to also apply to cloud kitchen items
-- Items of type `cloud_kitchen` without any cook allocation should be hidden
-
-**4. ItemDetail page (`src/pages/ItemDetail.tsx`)**
-- Extend the cook availability check (currently homemade-only) to also apply to cloud kitchen items
-- Fetch cook_dishes for cloud kitchen items the same way as homemade
-- Show "No Cooks Available" disabled button when a cloud kitchen item has no cooks assigned (for the customer's panchayat)
+These two changes together ensure cooks can upload via Cloudinary (primary) with Supabase Storage as a working fallback.
 
 ### Technical Detail
 
-The existing `useCookAllocatedItemIds` hook already fetches all `cook_dishes` regardless of service type and filters by active/available cooks and panchayat. So the allocated IDs set already contains cloud kitchen items that have cooks — we just need to use it for filtering cloud kitchen items too.
+New migration with:
+```sql
+-- Allow all authenticated users to read storage providers
+CREATE POLICY "Authenticated users can read storage providers"
+ON public.storage_providers FOR SELECT
+TO authenticated
+USING (true);
 
-In each component, the change is small: where we currently have:
-```
-if (item.service_type === 'homemade' && allocatedIds) {
-  return allocatedIds.has(item.id);
-}
-```
-We add cloud_kitchen to the same check:
-```
-if ((item.service_type === 'homemade' || item.service_type === 'cloud_kitchen') && allocatedIds) {
-  return allocatedIds.has(item.id);
-}
-```
+-- Create food-images bucket
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('food-images', 'food-images', true);
 
-For ItemDetail, we extend the cook-fetching logic (lines 77-131) to also run for cloud kitchen items, and extend `noCooksAvailable` to cover both service types.
+-- Allow authenticated uploads
+CREATE POLICY "Authenticated users can upload food images"
+ON storage.objects FOR INSERT
+TO authenticated
+WITH CHECK (bucket_id = 'food-images');
+
+-- Allow public reads
+CREATE POLICY "Public can read food images"
+ON storage.objects FOR SELECT
+TO public
+USING (bucket_id = 'food-images');
+```
 
