@@ -229,6 +229,22 @@ const Checkout: React.FC = () => {
         }
       }
 
+      // Auto-save the manually entered address for future use
+      if (!isUsingSavedAddress.current && deliveryAddress.trim()) {
+        const alreadySaved = addresses.some(
+          (a) => a.full_address.trim().toLowerCase() === deliveryAddress.trim().toLowerCase()
+        );
+        if (!alreadySaved) {
+          createAddress({
+            full_address: deliveryAddress.trim(),
+            address_label: 'Home',
+            panchayat_id: selectedPanchayat?.id,
+            ward_number: selectedWardNumber || undefined,
+            is_default: addresses.length === 0,
+          });
+        }
+      }
+
       // Clear the cart
       await clearCart();
 
