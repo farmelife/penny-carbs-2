@@ -5,7 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
-import { Upload, Loader2, X } from 'lucide-react';
+import { Upload, Loader2, X, ChevronDown, Image, Video } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useActiveStorageProvider, fetchActiveStorageProvider, StorageProvider } from '@/hooks/useStorageProviders';
 
 interface DishImage {
