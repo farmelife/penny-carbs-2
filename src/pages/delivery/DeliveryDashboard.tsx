@@ -434,6 +434,15 @@ const DeliveryDashboard: React.FC = () => {
                       </div>
                     )}
 
+                    {(order as any).delivery_latitude && (order as any).delivery_longitude && (
+                      <GoogleMapViewer
+                        latitude={(order as any).delivery_latitude}
+                        longitude={(order as any).delivery_longitude}
+                        height="120px"
+                        label="Delivery Location"
+                      />
+                    )}
+
                     <div className="flex items-center justify-between pt-2 border-t">
                       <div>
                         <p className="font-semibold">₹{order.total_amount}</p>
