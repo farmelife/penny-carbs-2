@@ -25,6 +25,7 @@ import { toast } from '@/hooks/use-toast';
 import NewOrderAlert from '@/components/delivery/NewOrderAlert';
 import OrderTakenToast from '@/components/delivery/OrderTakenToast';
 import NotificationPermissionBanner from '@/components/NotificationPermissionBanner';
+import GoogleMapViewer from '@/components/google-maps/GoogleMapViewer';
 import { format } from 'date-fns';
 import { 
   Truck, 
@@ -350,6 +351,16 @@ const DeliveryDashboard: React.FC = () => {
                           <MapPin className="h-3 w-3 mt-0.5 shrink-0" />
                           <span>{order.delivery_address}</span>
                         </div>
+                      )}
+
+                      {/* Google Map Location */}
+                      {(order as any).delivery_latitude && (order as any).delivery_longitude && (
+                        <GoogleMapViewer
+                          latitude={(order as any).delivery_latitude}
+                          longitude={(order as any).delivery_longitude}
+                          height="150px"
+                          label="Delivery Location"
+                        />
                       )}
 
                       {/* Amount & Actions */}
