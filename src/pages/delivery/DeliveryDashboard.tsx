@@ -44,6 +44,7 @@ import {
   History
 } from 'lucide-react';
 import type { DeliveryStatus } from '@/types/delivery';
+import { Loader2 } from 'lucide-react';
 
 const statusConfig: Record<DeliveryStatus, { label: string; color: string }> = {
   pending: { label: 'Pending', color: 'bg-yellow-100 text-yellow-800' },
