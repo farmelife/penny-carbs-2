@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { 
   useDeliveryProfile, 
@@ -43,6 +44,7 @@ import {
   History
 } from 'lucide-react';
 import type { DeliveryStatus } from '@/types/delivery';
+import { Loader2 } from 'lucide-react';
 
 const statusConfig: Record<DeliveryStatus, { label: string; color: string }> = {
   pending: { label: 'Pending', color: 'bg-yellow-100 text-yellow-800' },
@@ -57,6 +59,7 @@ const DeliveryDashboard: React.FC = () => {
   const { signOut } = useAuth();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({});
+  const [savingLocationOrderId, setSavingLocationOrderId] = useState<string | null>(null);
   
   const { data: profile, isLoading: profileLoading } = useDeliveryProfile();
   const { data: wallet } = useDeliveryWallet();
@@ -153,6 +156,54 @@ const DeliveryDashboard: React.FC = () => {
       });
     }
   };
+
+  const handleSaveCustomerLocation = useCallback(async (orderId: string, customerId: string) => {
+    if (!navigator.geolocation) {
+      toast({ title: "Error", description: "Geolocation not supported", variant: "destructive" });
+      return;
+    }
+    setSavingLocationOrderId(orderId);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        try {
+          // Update order delivery coordinates
+          await supabase
+            .from('orders')
+            .update({ delivery_latitude: lat, delivery_longitude: lng })
+            .eq('id', orderId);
+
+          // Update/create customer address with coordinates
+          const { data: existingAddr } = await supabase
+            .from('customer_addresses')
+            .select('id')
+            .eq('user_id', customerId)
+            .eq('is_default', true)
+            .maybeSingle();
+
+          if (existingAddr) {
+            await supabase
+              .from('customer_addresses')
+              .update({ latitude: lat, longitude: lng })
+              .eq('id', existingAddr.id);
+          }
+
+          queryClient.invalidateQueries({ queryKey: ['delivery-orders'] });
+          toast({ title: "Location Saved", description: "Customer's delivery location has been updated" });
+        } catch (error) {
+          toast({ title: "Error", description: "Failed to save location", variant: "destructive" });
+        } finally {
+          setSavingLocationOrderId(null);
+        }
+      },
+      () => {
+        toast({ title: "Error", description: "Could not get your current location", variant: "destructive" });
+        setSavingLocationOrderId(null);
+      },
+      { enableHighAccuracy: true }
+    );
+  }, [queryClient]);
 
   // Get active orders (assigned + picked_up) and delivered from history
   const activeOrders = myOrders || [];
@@ -354,10 +405,10 @@ const DeliveryDashboard: React.FC = () => {
                       )}
 
                       {/* Google Map Location */}
-                      {(order as any).delivery_latitude && (order as any).delivery_longitude && (
+                      {order.delivery_latitude && order.delivery_longitude && (
                         <GoogleMapViewer
-                          latitude={(order as any).delivery_latitude}
-                          longitude={(order as any).delivery_longitude}
+                          latitude={order.delivery_latitude}
+                          longitude={order.delivery_longitude}
                           height="150px"
                           label="Delivery Location"
                         />
@@ -372,6 +423,19 @@ const DeliveryDashboard: React.FC = () => {
                           )}
                         </div>
                         <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleSaveCustomerLocation(order.id, order.customer_id)}
+                            disabled={savingLocationOrderId === order.id}
+                          >
+                            {savingLocationOrderId === order.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                            ) : (
+                              <MapPin className="h-4 w-4 mr-1" />
+                            )}
+                            Save Location
+                          </Button>
                           {order.delivery_status === 'assigned' && (
                             <Button
                               size="sm"

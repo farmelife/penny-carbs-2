@@ -86,6 +86,7 @@ export function useDeliveryNotifications() {
       ward_number: orderData.ward_number,
       created_at: orderData.created_at,
       delivered_at: orderData.delivered_at || null,
+      customer_id: orderData.customer_id,
       customer: customerProfile || undefined,
       cutoff_at: new Date(Date.now() + ORDER_ACCEPT_CUTOFF_SECONDS * 1000),
       seconds_remaining: ORDER_ACCEPT_CUTOFF_SECONDS,

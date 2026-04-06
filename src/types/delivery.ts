@@ -79,10 +79,13 @@ export interface DeliveryOrder {
   delivery_instructions: string | null;
   estimated_delivery_minutes?: number;
   delivery_eta?: string | null;
+  delivery_latitude?: number | null;
+  delivery_longitude?: number | null;
   panchayat_id: string;
   ward_number: number;
   created_at: string;
   delivered_at?: string | null;
+  customer_id: string;
   customer?: {
     name: string;
     mobile_number: string;
