@@ -405,10 +405,10 @@ const DeliveryDashboard: React.FC = () => {
                       )}
 
                       {/* Google Map Location */}
-                      {(order as any).delivery_latitude && (order as any).delivery_longitude && (
+                      {order.delivery_latitude && order.delivery_longitude && (
                         <GoogleMapViewer
-                          latitude={(order as any).delivery_latitude}
-                          longitude={(order as any).delivery_longitude}
+                          latitude={order.delivery_latitude}
+                          longitude={order.delivery_longitude}
                           height="150px"
                           label="Delivery Location"
                         />
