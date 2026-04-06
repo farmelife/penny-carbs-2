@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { ArrowLeft, MapPin, Clock, Loader2, ChefHat, AlertCircle } from 'lucide-react';
+import GoogleMapPicker from '@/components/google-maps/GoogleMapPicker';
 import { toast } from '@/hooks/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import type { CookInfo } from '@/hooks/useCustomerCloudKitchen';
@@ -62,6 +63,8 @@ const CloudKitchenCheckout: React.FC = () => {
   const [deliveryAddress, setDeliveryAddress] = useState('');
   const [deliveryInstructions, setDeliveryInstructions] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deliveryLat, setDeliveryLat] = useState<number | null>(null);
+  const [deliveryLng, setDeliveryLng] = useState<number | null>(null);
 
   // Redirect if no cart data
   if (!state || !state.cartItems || state.cartItems.length === 0) {
@@ -191,8 +194,10 @@ const CloudKitchenCheckout: React.FC = () => {
           ward_number: selectedWardNumber!,
           delivery_address: deliveryAddress,
           delivery_instructions: deliveryInstructions || null,
+          delivery_latitude: deliveryLat,
+          delivery_longitude: deliveryLng,
           cloud_kitchen_slot_id: division.id,
-          status: 'pending', // Pending until cook accepts
+          status: 'pending',
           cook_status: 'pending',
           delivery_status: 'pending',
           cook_assignment_status: 'pending',
@@ -307,6 +312,19 @@ const CloudKitchenCheckout: React.FC = () => {
                 value={deliveryAddress}
                 onChange={(e) => setDeliveryAddress(e.target.value)}
                 rows={3}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Pin Delivery Location (Optional)</Label>
+              <GoogleMapPicker
+                latitude={deliveryLat}
+                longitude={deliveryLng}
+                onLocationChange={(lat, lng) => {
+                  setDeliveryLat(lat);
+                  setDeliveryLng(lng);
+                }}
+                height="200px"
               />
             </div>
 
