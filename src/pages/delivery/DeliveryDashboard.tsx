@@ -157,6 +157,54 @@ const DeliveryDashboard: React.FC = () => {
     }
   };
 
+  const handleSaveCustomerLocation = useCallback(async (orderId: string, customerId: string) => {
+    if (!navigator.geolocation) {
+      toast({ title: "Error", description: "Geolocation not supported", variant: "destructive" });
+      return;
+    }
+    setSavingLocationOrderId(orderId);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        try {
+          // Update order delivery coordinates
+          await supabase
+            .from('orders')
+            .update({ delivery_latitude: lat, delivery_longitude: lng })
+            .eq('id', orderId);
+
+          // Update/create customer address with coordinates
+          const { data: existingAddr } = await supabase
+            .from('customer_addresses')
+            .select('id')
+            .eq('user_id', customerId)
+            .eq('is_default', true)
+            .maybeSingle();
+
+          if (existingAddr) {
+            await supabase
+              .from('customer_addresses')
+              .update({ latitude: lat, longitude: lng })
+              .eq('id', existingAddr.id);
+          }
+
+          queryClient.invalidateQueries({ queryKey: ['delivery-orders'] });
+          toast({ title: "Location Saved", description: "Customer's delivery location has been updated" });
+        } catch (error) {
+          toast({ title: "Error", description: "Failed to save location", variant: "destructive" });
+        } finally {
+          setSavingLocationOrderId(null);
+        }
+      },
+      () => {
+        toast({ title: "Error", description: "Could not get your current location", variant: "destructive" });
+        setSavingLocationOrderId(null);
+      },
+      { enableHighAccuracy: true }
+    );
+  }, [queryClient]);
+
   // Get active orders (assigned + picked_up) and delivered from history
   const activeOrders = myOrders || [];
   const deliveredOrders = (orderHistory || []).filter(o => o.delivery_status === 'delivered');
