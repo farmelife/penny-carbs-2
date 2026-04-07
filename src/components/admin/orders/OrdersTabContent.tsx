@@ -428,8 +428,25 @@ const OrdersTabContent: React.FC<OrdersTabContentProps> = ({ serviceType }) => {
                             month: 'short',
                             year: 'numeric',
                           })}
+                          {' '}
+                          <span className="text-muted-foreground">
+                            {new Date(order.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}
+                          </span>
                         </span>
                       </div>
+                      {/* Live delay indicator on card */}
+                      {!['delivered', 'cancelled'].includes(order.status) && (() => {
+                        const mins = getMinutesDiff(order.created_at, new Date().toISOString());
+                        if (mins !== null && mins > 30) {
+                          return (
+                            <div className="col-span-2 flex items-center gap-1 text-xs text-destructive font-medium">
+                              <AlertCircle className="h-3 w-3" />
+                              {formatDuration(mins)} since placed
+                            </div>
+                          );
+                        }
+                        return null;
+                      })()}
                     </div>
 
                     {/* Expanded Order Details */}
