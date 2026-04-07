@@ -43,6 +43,18 @@ const Checkout: React.FC = () => {
   // Determine service type from cart items (assume all items have same service type)
   const serviceType = items[0]?.food_item?.service_type || 'cloud_kitchen';
 
+  // Get the primary cook ID from cart items for distance calculation
+  const primaryCookId = items[0]?.selected_cook_id || null;
+
+  // Calculate delivery charge based on distance
+  const { charge: calculatedDeliveryFee, distanceKm, isLoading: deliveryChargeLoading } = useDeliveryChargeCalculator(
+    serviceType,
+    primaryCookId,
+    deliveryLat,
+    deliveryLng,
+    totalAmount
+  );
+
   if (!user) {
     navigate('/auth');
     return null;
@@ -271,7 +283,7 @@ const Checkout: React.FC = () => {
     }
   };
 
-  const deliveryFee = serviceType === 'homemade' ? 30 : 0;
+  const deliveryFee = calculatedDeliveryFee;
   const grandTotal = totalAmount + deliveryFee;
 
   return (
