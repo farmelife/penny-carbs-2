@@ -607,6 +607,9 @@ const OrdersTabContent: React.FC<OrdersTabContentProps> = ({ serviceType }) => {
                                   </div>
                                 );
                               })()}
+                            </div>
+
+                            {/* Distance Calculator */}
                             <div className="rounded-md border p-3 space-y-2">
                               <h4 className="text-sm font-semibold flex items-center gap-1.5">
                                 <Navigation className="h-4 w-4 text-muted-foreground" />
