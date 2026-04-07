@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useCookProfile, useCookOrders, useUpdateCookStatus, useUpdateCookAvailability, useCookEarnings, useCookOrderHistory, useCookSettlements } from '@/hooks/useCook';
+import { useCookProfile, useCookOrders, useUpdateCookStatus, useUpdateCookAvailability, useCookEarnings, useCookOrderHistory, useCookSettlements, useUpdateCookLocation } from '@/hooks/useCook';
 import { useCookNotifications } from '@/hooks/useCookNotifications';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -43,6 +43,8 @@ import CookAllocatedDishes from '@/components/cook/CookAllocatedDishes';
 import ComboRequestForm from '@/components/cook/ComboRequestForm';
 import NewCookOrderAlert from '@/components/cook/NewCookOrderAlert';
 import NotificationPermissionBanner from '@/components/NotificationPermissionBanner';
+import GoogleMapPicker from '@/components/google-maps/GoogleMapPicker';
+import NotificationPermissionBanner from '@/components/NotificationPermissionBanner';
 
 const statusConfig: Record<CookStatus, { label: string; color: string; icon: React.ReactNode }> = {
   pending: { label: 'New Order', color: 'bg-yellow-100 text-yellow-800', icon: <Clock className="h-4 w-4" /> },
@@ -63,7 +65,10 @@ const CookDashboard: React.FC = () => {
   const { data: settlements, isLoading: settlementsLoading } = useCookSettlements();
   const updateStatus = useUpdateCookStatus();
   const updateAvailability = useUpdateCookAvailability();
+  const updateLocation = useUpdateCookLocation();
   const { pendingOrders: notificationOrders, showAlert, dismissAlert, removeOrder, ORDER_ACCEPT_CUTOFF_SECONDS } = useCookNotifications();
+  const [activeTab, setActiveTab] = useState('active');
+  const [showLocationPicker, setShowLocationPicker] = useState(false);
   const [activeTab, setActiveTab] = useState('active');
 
   // Calculate dish summary from order history
