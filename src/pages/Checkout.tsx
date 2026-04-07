@@ -144,7 +144,6 @@ const Checkout: React.FC = () => {
           delivery_latitude: deliveryLat,
           delivery_longitude: deliveryLng,
           delivery_distance_km: distanceKm,
-          delivery_longitude: deliveryLng,
           ...(isHomemade ? {
             status: 'confirmed' as const,
             cook_status: 'pending',
