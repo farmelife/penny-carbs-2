@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Package, Clock, CheckCircle, XCircle, Truck, Search, AlertTriangle, ChevronDown, MapPin, User, UtensilsCrossed, Phone, MessageCircle, Navigation, Calculator, Save, Loader2 } from 'lucide-react';
+import { Package, Clock, CheckCircle, XCircle, Truck, Search, AlertTriangle, ChevronDown, MapPin, User, UtensilsCrossed, Phone, MessageCircle, Navigation, Calculator, Save, Loader2, Timer, AlertCircle } from 'lucide-react';
 import GoogleMapViewer from '@/components/google-maps/GoogleMapViewer';
 import { useToast } from '@/hooks/use-toast';
 import { calculateDistanceKm } from '@/lib/distanceUtils';
@@ -60,6 +60,31 @@ const statusConfig: Record<OrderStatus, { label: string; color: string; icon: Re
   out_for_delivery: { label: 'Out for Delivery', color: 'bg-cloud-kitchen text-white', icon: <Truck className="h-4 w-4" /> },
   delivered: { label: 'Delivered', color: 'bg-success text-success-foreground', icon: <CheckCircle className="h-4 w-4" /> },
   cancelled: { label: 'Cancelled', color: 'bg-destructive text-destructive-foreground', icon: <XCircle className="h-4 w-4" /> },
+};
+
+const formatTimestamp = (ts: string | null | undefined) => {
+  if (!ts) return null;
+  return new Date(ts).toLocaleString('en-IN', {
+    day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true,
+  });
+};
+
+const getMinutesDiff = (from: string | null | undefined, to: string | null | undefined): number | null => {
+  if (!from || !to) return null;
+  return Math.round((new Date(to).getTime() - new Date(from).getTime()) / 60000);
+};
+
+const formatDuration = (minutes: number | null): string => {
+  if (minutes === null) return '—';
+  if (minutes < 1) return '< 1 min';
+  if (minutes < 60) return `${minutes} min`;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return m > 0 ? `${h}h ${m}m` : `${h}h`;
+};
+
+const isDelayed = (minutes: number | null, threshold: number): boolean => {
+  return minutes !== null && minutes > threshold;
 };
 
 interface OrdersTabContentProps {
@@ -403,8 +428,25 @@ const OrdersTabContent: React.FC<OrdersTabContentProps> = ({ serviceType }) => {
                             month: 'short',
                             year: 'numeric',
                           })}
+                          {' '}
+                          <span className="text-muted-foreground">
+                            {new Date(order.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}
+                          </span>
                         </span>
                       </div>
+                      {/* Live delay indicator on card */}
+                      {!['delivered', 'cancelled'].includes(order.status) && (() => {
+                        const mins = getMinutesDiff(order.created_at, new Date().toISOString());
+                        if (mins !== null && mins > 30) {
+                          return (
+                            <div className="col-span-2 flex items-center gap-1 text-xs text-destructive font-medium">
+                              <AlertCircle className="h-3 w-3" />
+                              {formatDuration(mins)} since placed
+                            </div>
+                          );
+                        }
+                        return null;
+                      })()}
                     </div>
 
                     {/* Expanded Order Details */}
@@ -489,6 +531,99 @@ const OrdersTabContent: React.FC<OrdersTabContentProps> = ({ serviceType }) => {
                                 <span>Total</span>
                                 <span>₹{order.total_amount}</span>
                               </div>
+                            </div>
+
+                            {/* Time Punch & Delay Tracker */}
+                            <div className="rounded-md border p-3 space-y-2">
+                              <h4 className="text-sm font-semibold flex items-center gap-1.5">
+                                <Timer className="h-4 w-4 text-muted-foreground" />
+                                Time Punch & Delays
+                              </h4>
+                              {(() => {
+                                const o = order as any;
+                                const orderPlaced = order.created_at;
+                                const cookAssigned = o.cook_assigned_at;
+                                const cookResponded = o.cook_responded_at;
+                                const deliveredAt = o.delivered_at;
+                                const updatedAt = order.updated_at;
+
+                                // Calculate durations
+                                const waitForCookAssign = getMinutesDiff(orderPlaced, cookAssigned);
+                                const cookResponseTime = getMinutesDiff(cookAssigned, cookResponded);
+                                const totalTime = deliveredAt ? getMinutesDiff(orderPlaced, deliveredAt) : null;
+                                const pendingMinutes = order.status === 'pending' ? getMinutesDiff(orderPlaced, new Date().toISOString()) : null;
+
+                                const timelineSteps = [
+                                  { label: 'Order Placed', time: formatTimestamp(orderPlaced), raw: orderPlaced },
+                                  { label: 'Cook Assigned', time: formatTimestamp(cookAssigned), raw: cookAssigned, duration: waitForCookAssign, durationLabel: 'Wait for assignment', threshold: 30 },
+                                  { label: 'Cook Responded', time: formatTimestamp(cookResponded), raw: cookResponded, duration: cookResponseTime, durationLabel: 'Response time', threshold: 15 },
+                                  ...(deliveredAt ? [{ label: 'Delivered', time: formatTimestamp(deliveredAt), raw: deliveredAt, duration: totalTime, durationLabel: 'Total time', threshold: 120 }] : []),
+                                ];
+
+                                return (
+                                  <div className="space-y-1.5">
+                                    {/* Active delay warning */}
+                                    {pendingMinutes !== null && pendingMinutes > 15 && (
+                                      <div className="flex items-center gap-1.5 rounded-md bg-destructive/10 px-2 py-1.5 text-xs text-destructive font-medium">
+                                        <AlertCircle className="h-3.5 w-3.5" />
+                                        Order pending for {formatDuration(pendingMinutes)} — needs attention!
+                                      </div>
+                                    )}
+                                    {order.status !== 'cancelled' && order.status !== 'delivered' && order.status !== 'pending' && (() => {
+                                      const activeMinutes = getMinutesDiff(orderPlaced, new Date().toISOString());
+                                      if (activeMinutes !== null && activeMinutes > 60) {
+                                        return (
+                                          <div className="flex items-center gap-1.5 rounded-md bg-warning/20 px-2 py-1.5 text-xs text-warning-foreground font-medium">
+                                            <AlertCircle className="h-3.5 w-3.5" />
+                                            Order active for {formatDuration(activeMinutes)} (Status: {order.status})
+                                          </div>
+                                        );
+                                      }
+                                      return null;
+                                    })()}
+
+                                    {/* Timeline */}
+                                    <div className="relative pl-4 space-y-2">
+                                      {timelineSteps.map((step, idx) => (
+                                        <div key={idx} className="relative">
+                                          {/* Connector line */}
+                                          {idx < timelineSteps.length - 1 && (
+                                            <div className="absolute left-[-12px] top-4 w-px h-full bg-border" />
+                                          )}
+                                          {/* Dot */}
+                                          <div className={`absolute left-[-16px] top-1 w-2 h-2 rounded-full ${step.raw ? 'bg-primary' : 'bg-muted-foreground/30'}`} />
+                                          <div className="flex flex-wrap items-center gap-x-2 text-xs">
+                                            <span className="font-medium">{step.label}</span>
+                                            {step.time ? (
+                                              <span className="text-muted-foreground">{step.time}</span>
+                                            ) : (
+                                              <span className="text-muted-foreground italic">—</span>
+                                            )}
+                                            {step.duration !== undefined && step.duration !== null && (
+                                              <Badge
+                                                variant="outline"
+                                                className={`text-[10px] px-1.5 py-0 ${isDelayed(step.duration, step.threshold || 30) ? 'border-destructive text-destructive' : 'border-border text-muted-foreground'}`}
+                                              >
+                                                {isDelayed(step.duration, step.threshold || 30) && '⚠ '}
+                                                {step.durationLabel}: {formatDuration(step.duration)}
+                                              </Badge>
+                                            )}
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+
+                                    {/* Summary */}
+                                    {totalTime !== null && (
+                                      <div className={`flex items-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium ${isDelayed(totalTime, 120) ? 'bg-destructive/10 text-destructive' : 'bg-success/10 text-success-foreground'}`}>
+                                        <Clock className="h-3.5 w-3.5" />
+                                        Total Order Time: {formatDuration(totalTime)}
+                                        {isDelayed(totalTime, 120) && ' — Delayed'}
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })()}
                             </div>
 
                             {/* Distance Calculator */}
