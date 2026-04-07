@@ -152,6 +152,12 @@ const HomeDeliveryModule: React.FC = () => {
       action: () => navigate('/admin/home-delivery/cooks'),
       description: 'Assign cooks to orders'
     },
+    {
+      icon: Calculator,
+      label: 'Delivery Charges',
+      action: () => setCurrentPage('delivery-charges'),
+      description: 'Distance-based charge rules & per-km pricing',
+    },
     { 
       icon: Truck, 
       label: 'Delivery Staff', 
