@@ -12,6 +12,8 @@ export interface Cook {
   is_available: boolean;
   rating: number;
   total_orders: number;
+  latitude: number | null;
+  longitude: number | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;

@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useCookProfile, useCookOrders, useUpdateCookStatus, useUpdateCookAvailability, useCookEarnings, useCookOrderHistory, useCookSettlements } from '@/hooks/useCook';
+import { useCookProfile, useCookOrders, useUpdateCookStatus, useUpdateCookAvailability, useCookEarnings, useCookOrderHistory, useCookSettlements, useUpdateCookLocation } from '@/hooks/useCook';
 import { useCookNotifications } from '@/hooks/useCookNotifications';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -43,6 +43,7 @@ import CookAllocatedDishes from '@/components/cook/CookAllocatedDishes';
 import ComboRequestForm from '@/components/cook/ComboRequestForm';
 import NewCookOrderAlert from '@/components/cook/NewCookOrderAlert';
 import NotificationPermissionBanner from '@/components/NotificationPermissionBanner';
+import GoogleMapPicker from '@/components/google-maps/GoogleMapPicker';
 
 const statusConfig: Record<CookStatus, { label: string; color: string; icon: React.ReactNode }> = {
   pending: { label: 'New Order', color: 'bg-yellow-100 text-yellow-800', icon: <Clock className="h-4 w-4" /> },
@@ -63,8 +64,10 @@ const CookDashboard: React.FC = () => {
   const { data: settlements, isLoading: settlementsLoading } = useCookSettlements();
   const updateStatus = useUpdateCookStatus();
   const updateAvailability = useUpdateCookAvailability();
+  const updateLocation = useUpdateCookLocation();
   const { pendingOrders: notificationOrders, showAlert, dismissAlert, removeOrder, ORDER_ACCEPT_CUTOFF_SECONDS } = useCookNotifications();
   const [activeTab, setActiveTab] = useState('active');
+  const [showLocationPicker, setShowLocationPicker] = useState(false);
 
   // Calculate dish summary from order history
   const dishSummary = useMemo(() => {
@@ -221,7 +224,55 @@ const CookDashboard: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Wallet / Earnings Section */}
+        {/* Kitchen Location */}
+        <Card>
+          <CardContent className="p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium flex items-center gap-1.5">
+                  <MapPin className="h-4 w-4 text-primary" />
+                  Kitchen Location
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {profile.latitude && profile.longitude
+                    ? `📍 Location set (${profile.latitude.toFixed(4)}, ${profile.longitude.toFixed(4)})`
+                    : '⚠️ Not set — needed for delivery distance calculation'}
+                </p>
+              </div>
+              <Button
+                size="sm"
+                variant={showLocationPicker ? "secondary" : "outline"}
+                onClick={() => setShowLocationPicker(!showLocationPicker)}
+              >
+                {showLocationPicker ? 'Hide Map' : profile.latitude ? 'Update' : 'Set Location'}
+              </Button>
+            </div>
+            {showLocationPicker && (
+              <GoogleMapPicker
+                latitude={profile.latitude}
+                longitude={profile.longitude}
+                onLocationChange={async (lat, lng) => {
+                  try {
+                    await updateLocation.mutateAsync({ latitude: lat, longitude: lng });
+                    toast({
+                      title: "Location Saved",
+                      description: `Kitchen location updated (${lat.toFixed(4)}, ${lng.toFixed(4)})`,
+                    });
+                  } catch {
+                    toast({
+                      title: "Error",
+                      description: "Failed to save location",
+                      variant: "destructive",
+                    });
+                  }
+                }}
+                height="200px"
+              />
+            )}
+          </CardContent>
+        </Card>
+
+
         <Card className="bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
