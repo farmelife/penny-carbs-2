@@ -224,7 +224,55 @@ const CookDashboard: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Wallet / Earnings Section */}
+        {/* Kitchen Location */}
+        <Card>
+          <CardContent className="p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium flex items-center gap-1.5">
+                  <MapPin className="h-4 w-4 text-primary" />
+                  Kitchen Location
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {(profile as any).latitude && (profile as any).longitude
+                    ? `📍 Location set (${(profile as any).latitude.toFixed(4)}, ${(profile as any).longitude.toFixed(4)})`
+                    : '⚠️ Not set — needed for delivery distance calculation'}
+                </p>
+              </div>
+              <Button
+                size="sm"
+                variant={showLocationPicker ? "secondary" : "outline"}
+                onClick={() => setShowLocationPicker(!showLocationPicker)}
+              >
+                {showLocationPicker ? 'Hide Map' : (profile as any).latitude ? 'Update' : 'Set Location'}
+              </Button>
+            </div>
+            {showLocationPicker && (
+              <GoogleMapPicker
+                latitude={(profile as any).latitude}
+                longitude={(profile as any).longitude}
+                onLocationChange={async (lat, lng) => {
+                  try {
+                    await updateLocation.mutateAsync({ latitude: lat, longitude: lng });
+                    toast({
+                      title: "Location Saved",
+                      description: `Kitchen location updated (${lat.toFixed(4)}, ${lng.toFixed(4)})`,
+                    });
+                  } catch {
+                    toast({
+                      title: "Error",
+                      description: "Failed to save location",
+                      variant: "destructive",
+                    });
+                  }
+                }}
+                height="200px"
+              />
+            )}
+          </CardContent>
+        </Card>
+
+
         <Card className="bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
