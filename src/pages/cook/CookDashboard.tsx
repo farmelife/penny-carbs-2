@@ -68,7 +68,6 @@ const CookDashboard: React.FC = () => {
   const { pendingOrders: notificationOrders, showAlert, dismissAlert, removeOrder, ORDER_ACCEPT_CUTOFF_SECONDS } = useCookNotifications();
   const [activeTab, setActiveTab] = useState('active');
   const [showLocationPicker, setShowLocationPicker] = useState(false);
-  const [activeTab, setActiveTab] = useState('active');
 
   // Calculate dish summary from order history
   const dishSummary = useMemo(() => {
