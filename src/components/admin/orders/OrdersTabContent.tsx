@@ -62,6 +62,31 @@ const statusConfig: Record<OrderStatus, { label: string; color: string; icon: Re
   cancelled: { label: 'Cancelled', color: 'bg-destructive text-destructive-foreground', icon: <XCircle className="h-4 w-4" /> },
 };
 
+const formatTimestamp = (ts: string | null | undefined) => {
+  if (!ts) return null;
+  return new Date(ts).toLocaleString('en-IN', {
+    day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true,
+  });
+};
+
+const getMinutesDiff = (from: string | null | undefined, to: string | null | undefined): number | null => {
+  if (!from || !to) return null;
+  return Math.round((new Date(to).getTime() - new Date(from).getTime()) / 60000);
+};
+
+const formatDuration = (minutes: number | null): string => {
+  if (minutes === null) return '—';
+  if (minutes < 1) return '< 1 min';
+  if (minutes < 60) return `${minutes} min`;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return m > 0 ? `${h}h ${m}m` : `${h}h`;
+};
+
+const isDelayed = (minutes: number | null, threshold: number): boolean => {
+  return minutes !== null && minutes > threshold;
+};
+
 interface OrdersTabContentProps {
   serviceType?: ServiceType;
 }
