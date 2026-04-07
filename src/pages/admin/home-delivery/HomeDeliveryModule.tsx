@@ -17,11 +17,13 @@ import {
   BarChart3,
   Settings,
   UtensilsCrossed,
+  Calculator,
 } from 'lucide-react';
 import HomeDeliveryItems from './HomeDeliveryItems';
 import HomeDeliveryDelivery from './HomeDeliveryDelivery';
+import DeliveryRulesTab from '@/components/admin/delivery/DeliveryRulesTab';
 
-type SubPage = 'dashboard' | 'items' | 'delivery';
+type SubPage = 'dashboard' | 'items' | 'delivery' | 'delivery-charges';
 
 const HomeDeliveryModule: React.FC = () => {
   const navigate = useNavigate();
