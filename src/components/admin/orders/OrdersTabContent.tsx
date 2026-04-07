@@ -9,9 +9,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Package, Clock, CheckCircle, XCircle, Truck, Search, AlertTriangle, ChevronDown, MapPin, User, UtensilsCrossed, Phone, MessageCircle } from 'lucide-react';
+import { Package, Clock, CheckCircle, XCircle, Truck, Search, AlertTriangle, ChevronDown, MapPin, User, UtensilsCrossed, Phone, MessageCircle, Navigation, Calculator, Save, Loader2 } from 'lucide-react';
 import GoogleMapViewer from '@/components/google-maps/GoogleMapViewer';
 import { useToast } from '@/hooks/use-toast';
+import { calculateDistanceKm } from '@/lib/distanceUtils';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -46,7 +47,7 @@ interface OrderItemDetail {
 
 interface OrderDetail {
   items: OrderItemDetail[];
-  cook?: { kitchen_name: string; mobile_number: string } | null;
+  cook?: { kitchen_name: string; mobile_number: string; latitude?: number | null; longitude?: number | null } | null;
   delivery_staff?: { name: string; mobile_number: string; vehicle_type: string } | null;
   panchayat?: { name: string } | null;
 }
@@ -77,7 +78,8 @@ const OrdersTabContent: React.FC<OrdersTabContentProps> = ({ serviceType }) => {
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [orderDetails, setOrderDetails] = useState<Record<string, OrderDetail>>({});
   const [loadingDetails, setLoadingDetails] = useState<Record<string, boolean>>({});
-
+  const [editingDistance, setEditingDistance] = useState<Record<string, string>>({});
+  const [savingDistance, setSavingDistance] = useState<Record<string, boolean>>({});
   const fetchOrders = async () => {
     setIsLoading(true);
     try {
@@ -168,7 +170,7 @@ const OrdersTabContent: React.FC<OrdersTabContentProps> = ({ serviceType }) => {
       if (order.assigned_cook_id) {
         const { data: cookData } = await supabase
           .from('cooks')
-          .select('kitchen_name, mobile_number')
+          .select('kitchen_name, mobile_number, latitude, longitude')
           .eq('id', order.assigned_cook_id)
           .single();
         cook = cookData;
@@ -219,7 +221,45 @@ const OrdersTabContent: React.FC<OrdersTabContentProps> = ({ serviceType }) => {
     fetchOrders();
   }, [statusFilter, serviceType]);
 
+  const handleCalculateDistance = (order: OrderWithProfile) => {
+    const details = orderDetails[order.id];
+    const cookLat = details?.cook?.latitude;
+    const cookLng = details?.cook?.longitude;
+    const custLat = (order as any).delivery_latitude;
+    const custLng = (order as any).delivery_longitude;
 
+    if (cookLat && cookLng && custLat && custLng) {
+      const dist = calculateDistanceKm(cookLat, cookLng, custLat, custLng);
+      setEditingDistance(prev => ({ ...prev, [order.id]: String(dist) }));
+    } else {
+      toast({ title: 'Missing Coordinates', description: 'Cook or customer location coordinates are not available', variant: 'destructive' });
+    }
+  };
+
+  const handleSaveDistance = async (orderId: string) => {
+    const distVal = parseFloat(editingDistance[orderId]);
+    if (isNaN(distVal) || distVal < 0) {
+      toast({ title: 'Invalid Distance', description: 'Please enter a valid distance', variant: 'destructive' });
+      return;
+    }
+    setSavingDistance(prev => ({ ...prev, [orderId]: true }));
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .update({ delivery_distance_km: distVal, updated_at: new Date().toISOString() })
+        .eq('id', orderId);
+      if (error) throw error;
+      toast({ title: 'Saved', description: `Distance updated to ${distVal} km` });
+      // Update local state
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, delivery_distance_km: distVal } : o));
+      setEditingDistance(prev => { const n = { ...prev }; delete n[orderId]; return n; });
+    } catch (error) {
+      console.error('Error saving distance:', error);
+      toast({ title: 'Error', description: 'Failed to save distance', variant: 'destructive' });
+    } finally {
+      setSavingDistance(prev => ({ ...prev, [orderId]: false }));
+    }
+  };
 
   const updateOrderStatus = async (orderId: string, newStatus: OrderStatus, reason?: string) => {
     try {
@@ -449,6 +489,59 @@ const OrdersTabContent: React.FC<OrdersTabContentProps> = ({ serviceType }) => {
                                 <span>Total</span>
                                 <span>₹{order.total_amount}</span>
                               </div>
+                            </div>
+
+                            {/* Distance Calculator */}
+                            <div className="rounded-md border p-3 space-y-2">
+                              <h4 className="text-sm font-semibold flex items-center gap-1.5">
+                                <Navigation className="h-4 w-4 text-muted-foreground" />
+                                Delivery Distance
+                                {(order as any).delivery_distance_km != null && (
+                                  <Badge variant="outline" className="ml-auto text-xs">
+                                    Saved: {(order as any).delivery_distance_km} km
+                                  </Badge>
+                                )}
+                              </h4>
+                              <div className="flex items-center gap-2">
+                                <Input
+                                  type="number"
+                                  step="0.1"
+                                  min="0"
+                                  placeholder="Distance (km)"
+                                  value={editingDistance[order.id] ?? ((order as any).delivery_distance_km != null ? String((order as any).delivery_distance_km) : '')}
+                                  onChange={(e) => setEditingDistance(prev => ({ ...prev, [order.id]: e.target.value }))}
+                                  className="w-32 h-8 text-sm"
+                                />
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-8 gap-1"
+                                  onClick={() => handleCalculateDistance(order)}
+                                  title="Auto-calculate from cook & customer GPS"
+                                >
+                                  <Calculator className="h-3.5 w-3.5" />
+                                  Calculate
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  className="h-8 gap-1"
+                                  disabled={savingDistance[order.id]}
+                                  onClick={() => handleSaveDistance(order.id)}
+                                >
+                                  {savingDistance[order.id] ? (
+                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                  ) : (
+                                    <Save className="h-3.5 w-3.5" />
+                                  )}
+                                  Save
+                                </Button>
+                              </div>
+                              {!details?.cook?.latitude && (
+                                <p className="text-xs text-muted-foreground">⚠️ Cook location not set — enter distance manually</p>
+                              )}
+                              {!(order as any).delivery_latitude && (
+                                <p className="text-xs text-muted-foreground">⚠️ Customer delivery coordinates not available</p>
+                              )}
                             </div>
 
                             {/* Location & Delivery Info */}
