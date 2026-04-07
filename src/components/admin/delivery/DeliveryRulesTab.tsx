@@ -227,13 +227,24 @@ const DeliveryRulesTab: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <Label>Per KM Charge (₹) <span className="text-muted-foreground text-xs">Optional</span></Label>
+                <Label>Base Distance (KM)</Label>
+                <Input type="number" min="0" step="0.5" value={form.base_distance_km ?? 5} onChange={(e) => setForm(prev => ({ ...prev, base_distance_km: Number(e.target.value) }))} />
+                <p className="text-xs text-muted-foreground">Minimum charge applies within this distance. Extra KMs charged separately.</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Per KM Charge (₹) <span className="text-muted-foreground text-xs">For extra distance</span></Label>
                 <Input type="number" min="0" placeholder="0" value={form.per_km_charge ?? ''} onChange={(e) => setForm(prev => ({ ...prev, per_km_charge: e.target.value ? Number(e.target.value) : null }))} />
               </div>
 
               <div className="space-y-2">
                 <Label>Max Delivery Charge (₹) <span className="text-muted-foreground text-xs">Optional</span></Label>
                 <Input type="number" min="0" placeholder="Leave empty for no cap" value={form.max_delivery_charge ?? ''} onChange={(e) => setForm(prev => ({ ...prev, max_delivery_charge: e.target.value ? Number(e.target.value) : null }))} />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Free Delivery Above (₹) <span className="text-muted-foreground text-xs">Optional</span></Label>
+                <Input type="number" min="0" placeholder="Leave empty for no free delivery" value={form.free_delivery_above ?? ''} onChange={(e) => setForm(prev => ({ ...prev, free_delivery_above: e.target.value ? Number(e.target.value) : null }))} />
               </div>
 
               <p className="text-xs text-muted-foreground border-t pt-3">
