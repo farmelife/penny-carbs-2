@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
 import { 
   ArrowLeft, 
   Download, 
@@ -16,12 +17,16 @@ import {
   Calendar as CalendarIcon,
   Settings,
   TrendingUp,
-  Building2
+  Building2,
+  MapPin,
+  Ruler,
+  IndianRupee
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useSalesReport, useCookPerformanceReport, useDeliverySettlementReport, useReferralReport, usePanchayats, useVehicleRentReport } from '@/hooks/useReports';
 import { useProfitLossReport } from '@/hooks/useProfitLoss';
+import { useDeliveryDistanceReport } from '@/hooks/useDeliveryDistanceReport';
 import { exportToCSV, exportToExcel } from '@/lib/exportUtils';
 import { ReportFilters } from '@/types/reports';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
