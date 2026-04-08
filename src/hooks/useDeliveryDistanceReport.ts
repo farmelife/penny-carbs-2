@@ -57,7 +57,7 @@ export const useDeliveryDistanceReport = (filters: ReportFilters) => {
           panchayat_id, panchayats!orders_panchayat_id_fkey(name)
         `)
         .in('service_type', ['cloud_kitchen', 'homemade'])
-        .in('status', ['delivered', 'pending', 'accepted', 'preparing', 'ready']);
+        .in('status', ['delivered', 'pending', 'confirmed', 'preparing', 'ready', 'out_for_delivery']);
 
       if (filters.startDate) {
         query = query.gte('created_at', filters.startDate.toISOString());
