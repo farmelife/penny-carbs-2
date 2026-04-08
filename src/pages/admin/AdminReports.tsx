@@ -51,6 +51,7 @@ const AdminReports: React.FC = () => {
   const { data: referralData, isLoading: referralLoading } = useReferralReport();
   const { data: profitLossData, isLoading: profitLossLoading } = useProfitLossReport(filters);
   const { data: vehicleRentData, isLoading: vehicleRentLoading } = useVehicleRentReport(filters);
+  const { data: distanceReportData, isLoading: distanceLoading } = useDeliveryDistanceReport(filters);
 
   // Process sales data for display
   const salesSummary = useMemo(() => {
